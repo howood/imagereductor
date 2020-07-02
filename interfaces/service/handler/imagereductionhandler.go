@@ -39,7 +39,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		return err
 	}
 	defer src.Close()
-	dst, err := os.Create(file.Filename)
+	dst, err := os.Create("/tmp/" + file.Filename)
 	if err != nil {
 		return err
 	}
