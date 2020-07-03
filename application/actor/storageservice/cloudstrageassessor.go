@@ -8,6 +8,8 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
+const RecordNotFoundMsg = "status code: 404"
+
 type CloudStorageAssessor struct {
 	instance cloudstorages.StorageInstance
 	bucket   string
