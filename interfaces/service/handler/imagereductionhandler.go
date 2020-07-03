@@ -3,7 +3,6 @@ package handler
 import (
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/howood/imagereductor/application/actor/storageservice"
 	log "github.com/howood/imagereductor/infrastructure/logger"
@@ -34,19 +33,11 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		log.Error(err)
 		return err
 	}
-	src, err := file.Open()
+	reader, err := file.Open()
 	if err != nil {
 		return err
 	}
-	defer src.Close()
-	dst, err := os.Create("/tmp/" + file.Filename)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
-	if _, err = io.Copy(dst, src); err != nil {
-		return err
-	}
+	defer reader.Close()
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor()
-	return cloudstorageassessor.Put(c.FormValue("path"), dst)
+	return cloudstorageassessor.Put(c.FormValue("path"), reader.(io.ReadSeeker))
 }

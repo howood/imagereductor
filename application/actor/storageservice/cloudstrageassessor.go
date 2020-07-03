@@ -1,6 +1,7 @@
 package storageservice
 
 import (
+	"io"
 	"os"
 
 	"github.com/howood/imagereductor/infrastructure/client/cloudstorages"
@@ -34,7 +35,7 @@ func (csa *CloudStorageAssessor) Get(key string) (string, []byte, error) {
 	return csa.instance.Get(csa.bucket, key)
 }
 
-func (csa *CloudStorageAssessor) Put(path string, file *os.File) error {
+func (csa *CloudStorageAssessor) Put(path string, file io.ReadSeeker) error {
 	return csa.instance.Put(csa.bucket, path, file)
 }
 
