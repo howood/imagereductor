@@ -2,10 +2,12 @@ package handler
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/application/actor/storageservice"
@@ -19,9 +21,14 @@ type ImageReductionHandler struct {
 
 // Request is get from storage
 func (irh ImageReductionHandler) Request(c echo.Context) error {
-	log.Info("========= START REQUEST : " + c.Request().URL.RequestURI())
+	requesturi := c.Request().URL.RequestURI()
+	log.Info("========= START REQUEST : " + requesturi)
 	log.Info(c.Request().Method)
 	log.Info(c.Request().Header)
+	if irh.getCache(c, requesturi) {
+		log.Info("cache hit!")
+		return nil
+	}
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor()
 	contenttype, imagebyte, err := cloudstorageassessor.Get(c.FormValue("key"))
 	if err != nil {
@@ -46,6 +53,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 			return irh.errorResponse(c, http.StatusBadRequest, err)
 		}
 	}
+	irh.setCache(contenttype, imagebyte, requesturi)
 	return c.Blob(http.StatusOK, contenttype, imagebyte)
 }
 
@@ -73,4 +81,53 @@ func (irh ImageReductionHandler) errorResponse(c echo.Context, statudcode int, e
 		statudcode = http.StatusNotFound
 	}
 	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, "    ")
+}
+
+func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) bool {
+	if cachedvalue, cachedfound := actor.GetFromRedis(requesturi, true, actor.GetCachedDB()); cachedfound {
+		cachedcontent := &actor.CachedContent{}
+		switch xi := cachedvalue.(type) {
+		case []byte:
+			if err := cachedcontent.GobDecode(xi); err != nil {
+				log.Error("GobDecode Error byte")
+				log.Error(err.Error())
+				return false
+			}
+		case string:
+			if err := cachedcontent.GobDecode([]byte(xi)); err != nil {
+				log.Error("GobDecode Error string")
+				log.Error(err.Error())
+				return false
+			}
+
+		default:
+			log.Error("get cache error")
+			return false
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, cachedcontent.ContentType)
+		c.Response().Header().Set(echo.HeaderLastModified, cachedcontent.LastModified)
+		c.Response().Header().Set(echo.HeaderContentLength, fmt.Sprintf("%d", len(string(cachedcontent.Content))))
+		c.Response().WriteHeader(http.StatusOK)
+		_, err := c.Response().Write(cachedcontent.Content)
+		if err != nil {
+			log.Error(err.Error())
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requesturi string) {
+	cachedresponse := actor.CachedContent{}
+	cachedresponse.ContentType = mimetype
+	cachedresponse.LastModified = time.Now().UTC().Format(http.TimeFormat)
+	cachedresponse.Content = data
+	encodedcached, err := cachedresponse.GobEncode()
+	if err != nil {
+		log.Error(err)
+	} else {
+		actor.SetToRedis(requesturi, encodedcached, actor.GetChacheExpired()*time.Second, true, actor.GetCachedDB())
+	}
 }
