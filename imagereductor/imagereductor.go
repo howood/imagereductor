@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/howood/imagereductor/application/actor"
@@ -10,7 +11,12 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+var DefaultPort = "8080"
+
 func main() {
+	if os.Getenv("SERVER_PORT") != "" {
+		DefaultPort = os.Getenv("SERVER_PORT")
+	}
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -26,5 +32,5 @@ func main() {
 	}
 	e.POST("/", handler.ImageReductionHandler{}.Upload, middleware.JWTWithConfig(jwtconfig))
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", DefaultPort)))
 }
