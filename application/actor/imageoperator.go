@@ -114,7 +114,6 @@ func (im *ImageOperator) calcResizeXY() {
 }
 
 func (im *ImageOperator) calcResizeFitOptionWidth() {
-	log.Debug("######1########")
 	im.dstX = im.Option.Width
 	if im.originX != 0 {
 		im.dstY = int(float64(im.Option.Width) * (float64(im.originY) / float64(im.originX)))
@@ -124,7 +123,6 @@ func (im *ImageOperator) calcResizeFitOptionWidth() {
 }
 
 func (im *ImageOperator) calcResizeFitOptionHeight() {
-	log.Debug("######2########")
 	if im.originY != 0 {
 		im.dstX = int(float64(im.Option.Height) * (float64(im.originX) / float64(im.originY)))
 	} else {
