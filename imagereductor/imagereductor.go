@@ -25,5 +25,6 @@ func main() {
 		SigningKey: []byte(actor.TokenSecret),
 	}
 	e.POST("/", handler.ImageReductionHandler{}.Upload, middleware.JWTWithConfig(jwtconfig))
+
 	e.Logger.Fatal(e.Start(":8080"))
 }

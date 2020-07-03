@@ -5,7 +5,7 @@ import (
 )
 
 func Test_GetUUID(t *testing.T) {
-	result := GetUUID()
+	result := GetUUID(SATORI_UUID)
 	t.Log(result)
 	t.Log("success GetUUID")
 }
