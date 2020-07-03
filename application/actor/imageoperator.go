@@ -14,6 +14,7 @@ import (
 	"golang.org/x/image/draw"
 )
 
+// ImageOperator struct
 type ImageOperator struct {
 	source      image.Image
 	dst         image.Image
@@ -26,12 +27,14 @@ type ImageOperator struct {
 	Option      ImageOperatorOption
 }
 
+// ImageOperatorOption is Option of ImageOperator struct
 type ImageOperatorOption struct {
 	Width   int
 	Height  int
 	Quality int
 }
 
+// NewImageOperator create ImageOperator
 func NewImageOperator(contenttype string, option ImageOperatorOption) *ImageOperator {
 	return &ImageOperator{
 		ContentType: contenttype,
@@ -39,6 +42,7 @@ func NewImageOperator(contenttype string, option ImageOperatorOption) *ImageOper
 	}
 }
 
+// Decode images
 func (im *ImageOperator) Decode(src io.Reader) error {
 	var err error
 	im.source, im.imagename, err = image.Decode(src)
@@ -49,6 +53,7 @@ func (im *ImageOperator) Decode(src io.Reader) error {
 	return err
 }
 
+// Resize images
 func (im *ImageOperator) Resize() {
 	im.calcResizeXY()
 	rect := image.Rect(0, 0, im.dstX, im.dstY)
@@ -66,6 +71,7 @@ func (im *ImageOperator) Resize() {
 	}
 }
 
+// ImageByte get image bytes
 func (im *ImageOperator) ImageByte() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	switch im.ContentType {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/application/actor/storageservice"
@@ -12,17 +13,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// ImageReductionHandler struct
 type ImageReductionHandler struct {
 }
 
+// Request is get from storage
 func (irh ImageReductionHandler) Request(c echo.Context) error {
 	log.Info("========= START REQUEST : " + c.Request().URL.RequestURI())
 	log.Info(c.Request().Method)
 	log.Info(c.Request().Header)
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor()
-	contenttype, imagebyte, err := cloudstorageassessor.Get(c.FormValue("storagekey"))
+	contenttype, imagebyte, err := cloudstorageassessor.Get(c.FormValue("key"))
 	if err != nil {
-		return err
+		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	width, _ := strconv.Atoi(c.FormValue("w"))
 	height, _ := strconv.Atoi(c.FormValue("h"))
@@ -40,12 +43,13 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		imageOperator.Resize()
 		var err error
 		if imagebyte, err = imageOperator.ImageByte(); err != nil {
-			return err
+			return irh.errorResponse(c, http.StatusBadRequest, err)
 		}
 	}
 	return c.Blob(http.StatusOK, contenttype, imagebyte)
 }
 
+// Upload is to upload to storage
 func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	log.Info("========= START REQUEST : " + c.Request().URL.RequestURI())
 	log.Info(c.Request().Method)
@@ -53,13 +57,20 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	file, err := c.FormFile("uploadfile")
 	if err != nil {
 		log.Error(err)
-		return err
+		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	reader, err := file.Open()
 	if err != nil {
-		return err
+		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	defer reader.Close()
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor()
 	return cloudstorageassessor.Put(c.FormValue("path"), reader.(io.ReadSeeker))
+}
+
+func (irh ImageReductionHandler) errorResponse(c echo.Context, statudcode int, err error) error {
+	if strings.Contains(strings.ToLower(err.Error()), storageservice.RecordNotFoundMsg) {
+		statudcode = http.StatusNotFound
+	}
+	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, "    ")
 }
