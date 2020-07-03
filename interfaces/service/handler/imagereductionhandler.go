@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"bytes"
 	"io"
 	"net/http"
+	"strconv"
 
+	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/application/actor/storageservice"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/labstack/echo/v4"
@@ -20,6 +23,25 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	contenttype, imagebyte, err := cloudstorageassessor.Get(c.FormValue("storagekey"))
 	if err != nil {
 		return err
+	}
+	width, _ := strconv.Atoi(c.FormValue("w"))
+	height, _ := strconv.Atoi(c.FormValue("h"))
+	quality, _ := strconv.Atoi(c.FormValue("q"))
+	if width > 0 || height > 0 {
+		imageOperator := actor.NewImageOperator(
+			contenttype,
+			actor.ImageOperatorOption{
+				Width:   width,
+				Height:  height,
+				Quality: quality,
+			},
+		)
+		imageOperator.Decode(bytes.NewBuffer(imagebyte))
+		imageOperator.Resize()
+		var err error
+		if imagebyte, err = imageOperator.ImageByte(); err != nil {
+			return err
+		}
 	}
 	return c.Blob(http.StatusOK, contenttype, imagebyte)
 }

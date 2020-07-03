@@ -8,5 +8,6 @@ require (
 	github.com/labstack/echo/v4 v4.1.16
 	github.com/mattn/go-colorable v0.1.6
 	github.com/sirupsen/logrus v1.6.0
+	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2
 )

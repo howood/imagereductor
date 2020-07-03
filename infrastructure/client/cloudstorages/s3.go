@@ -88,13 +88,13 @@ func (s3instance S3Instance) Put(bucket string, path string, file io.ReadSeeker)
 		Body:        file,
 		ContentType: aws.String(mimetype),
 	})
-	log.Info("", result)
+	log.Debug("", result)
 	return err
 }
 
 func (s3instance S3Instance) Get(bucket string, key string) (string, []byte, error) {
-	log.Info("", bucket)
-	log.Info("", key)
+	log.Debug("", bucket)
+	log.Debug("", key)
 	response, err := s3instance.client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -110,7 +110,7 @@ func (s3instance S3Instance) Get(bucket string, key string) (string, []byte, err
 	if _, err := io.Copy(buf, response.Body); err != nil {
 		return "", nil, err
 	}
-	log.Info("", contenttype)
+	log.Debug("", contenttype)
 	return contenttype, buf.Bytes(), nil
 }
 
@@ -119,7 +119,7 @@ func (s3instance S3Instance) Delete(bucket string, key string) error {
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
-	log.Info("", result)
+	log.Debug("", result)
 	return err
 }
 
@@ -131,6 +131,6 @@ func (s3instance S3Instance) getContentType(out io.ReadSeeker) (string, error) {
 		log.Warn("", err)
 	}
 	contentType := http.DetectContentType(buffer)
-	log.Info("", contentType)
+	log.Debug("", contentType)
 	return contentType, nil
 }

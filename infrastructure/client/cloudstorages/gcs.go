@@ -68,8 +68,8 @@ func (gcsinstance GCSInstance) Put(bucket string, path string, file io.ReadSeeke
 }
 
 func (gcsinstance GCSInstance) Get(bucket string, key string) (string, []byte, error) {
-	log.Info("", bucket)
-	log.Info("", key)
+	log.Debug("", bucket)
+	log.Debug("", key)
 
 	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(gcsinstance.ctx)
 	if err != nil {
