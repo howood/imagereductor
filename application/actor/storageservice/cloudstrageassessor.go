@@ -1,6 +1,7 @@
 package storageservice
 
 import (
+	"errors"
 	"io"
 	"os"
 
@@ -19,16 +20,19 @@ type CloudStorageAssessor struct {
 func NewCloudStorageAssessor() *CloudStorageAssessor {
 	var I *CloudStorageAssessor
 	log.Debug("", "use:"+os.Getenv("STORAGE_TYPE"))
-	if os.Getenv("STORAGE_TYPE") == "s3" {
+	switch os.Getenv("STORAGE_TYPE") {
+	case "s3":
 		I = &CloudStorageAssessor{
 			instance: cloudstorages.NewS3(),
 			bucket:   cloudstorages.S3_BUCKET_UPLOADFILES,
 		}
-	} else if os.Getenv("STORAGE_TYPE") == "gcs" {
+	case "gcs":
 		I = &CloudStorageAssessor{
 			instance: cloudstorages.NewGCS(),
 			bucket:   cloudstorages.GCS_BUCKET_UPLOADFILES,
 		}
+	default:
+		panic(errors.New("Invalid STORAGE_TYPE"))
 	}
 	return I
 }
