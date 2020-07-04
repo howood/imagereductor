@@ -3,13 +3,14 @@ package caches
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func Test_GoCacheClient(t *testing.T) {
 	setkey := "testkey"
 	setdata := "setdata"
-	client := NewGoCacheClient(5)
-	client.Set(setkey, setdata, 5)
+	client := NewGoCacheClient()
+	client.Set(setkey, setdata, 60*time.Second)
 	getdata, ok := client.Get(setkey)
 	if !ok {
 		t.Fatalf("failed to get cache")

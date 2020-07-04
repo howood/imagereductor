@@ -3,6 +3,7 @@ FROM golang:1.14 AS build-env
 WORKDIR /go/src/github.com/howood/imagereductor
 
 ADD application /go/src/github.com/howood/imagereductor/application
+ADD domain /go/src/github.com/howood/imagereductor/domain
 ADD imagereductor /go/src/github.com/howood/imagereductor/imagereductor
 ADD infrastructure /go/src/github.com/howood/imagereductor/infrastructure
 ADD interfaces /go/src/github.com/howood/imagereductor/interfaces
