@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/howood/imagereductor/application/actor"
+	"github.com/howood/imagereductor/application/actor/cacheservice"
 	"github.com/howood/imagereductor/application/actor/storageservice"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/labstack/echo/v4"
@@ -84,7 +85,8 @@ func (irh ImageReductionHandler) errorResponse(c echo.Context, statudcode int, e
 }
 
 func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) bool {
-	if cachedvalue, cachedfound := actor.GetFromRedis(requesturi, true, actor.GetCachedDB()); cachedfound {
+	cacheAssessor := cacheservice.NewCacheAssessor(cacheservice.GetCachedDB())
+	if cachedvalue, cachedfound := cacheAssessor.Get(requesturi); cachedfound {
 		cachedcontent := &actor.CachedContent{}
 		switch xi := cachedvalue.(type) {
 		case []byte:
@@ -116,6 +118,7 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 		}
 		return true
 	}
+	log.Debug("No Cache")
 	return false
 }
 
@@ -128,6 +131,7 @@ func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requestu
 	if err != nil {
 		log.Error(err)
 	} else {
-		actor.SetToRedis(requesturi, encodedcached, actor.GetChacheExpired()*time.Second, true, actor.GetCachedDB())
+		cacheAssessor := cacheservice.NewCacheAssessor(cacheservice.GetCachedDB())
+		cacheAssessor.Set(requesturi, encodedcached, cacheservice.GetChacheExpired())
 	}
 }
