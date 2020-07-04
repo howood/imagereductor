@@ -15,12 +15,12 @@ const TokenExpired = 60
 var TokenSecret = os.Getenv("TOKEN_SECRET")
 
 type JwtOperator struct {
-	JwtClaims *entity.JwtClaims
+	jwtClaims *entity.JwtClaims
 }
 
 func NewJwtOperator(username string, admin bool, expired time.Duration) repository.JwtClaimsRepository {
 	return &JwtOperator{
-		JwtClaims: &entity.JwtClaims{
+		jwtClaims: &entity.JwtClaims{
 			username,
 			admin,
 			jwt.StandardClaims{
@@ -31,7 +31,7 @@ func NewJwtOperator(username string, admin bool, expired time.Duration) reposito
 }
 
 func (jc *JwtOperator) CreateToken(secret string) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jc.JwtClaims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jc.jwtClaims)
 	tokenstring, err := token.SignedString([]byte(secret))
 	if err != nil {
 		log.Error("", err.Error())
