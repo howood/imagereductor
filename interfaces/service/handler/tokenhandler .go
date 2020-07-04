@@ -19,7 +19,7 @@ func (th TokenHandler) Request(c echo.Context) error {
 	log.Info(c.Request().Method)
 	log.Info(c.Request().Header)
 	claimname := uuid.GetUUID(uuid.SATORI_UUID)
-	jwtinstance := actor.NewJWTClaims(claimname, false, actor.TokenExpired)
+	jwtinstance := actor.NewJwtOperator(claimname, false, actor.TokenExpired)
 	tokenstr := jwtinstance.CreateToken(actor.TokenSecret)
 	return c.JSONPretty(http.StatusOK, map[string]interface{}{"token": tokenstr}, "    ")
 }
