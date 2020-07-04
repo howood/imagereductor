@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/application/actor/cacheservice"
 	"github.com/howood/imagereductor/application/actor/storageservice"
+	"github.com/howood/imagereductor/application/validator"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/labstack/echo/v4"
 )
@@ -73,6 +75,14 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	defer reader.Close()
+	imagetypearray := strings.Split(os.Getenv("VALIDATE_IMAGE_TYPE"), ",")
+	maxwidth, _ := strconv.Atoi(os.Getenv("VALIDATE_IMAGE_MAXWIDTH"))
+	maxheight, _ := strconv.Atoi(os.Getenv("VALIDATE_IMAGE_MAXHEIGHT"))
+	maxfilesize, _ := strconv.Atoi(os.Getenv("VALIDATE_IMAGE_MAXFILESIZE"))
+	imagevalidate := validator.NewImageValidator(imagetypearray, maxwidth, maxheight, maxfilesize)
+	if err := imagevalidate.Validate(reader); err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor()
 	return cloudstorageassessor.Put(c.FormValue("path"), reader.(io.ReadSeeker))
 }
