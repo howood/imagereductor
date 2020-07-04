@@ -1,0 +1,22 @@
+language: go
+go_import_path: github.com/howood/imagereductor
+go:
+  - 1.14.x
+
+script:
+  - go test -race -v ./...
+
+env:
+  global:
+    - CC_TEST_REPORTER_ID=9d5a56d51fed18812fb13dd0d5c3e8cc456d00d2dce7acf4019d2293324de5e1
+
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+
+script:
+  - go test -coverprofile c.out ./...
+
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
