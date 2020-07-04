@@ -87,7 +87,7 @@ func (irh ImageReductionHandler) errorResponse(c echo.Context, statudcode int, e
 func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) bool {
 	cacheAssessor := cacheservice.NewCacheAssessor(cacheservice.GetCachedDB())
 	if cachedvalue, cachedfound := cacheAssessor.Get(requesturi); cachedfound {
-		cachedcontent := &actor.CachedContent{}
+		cachedcontent := actor.NewCachedContentOperator()
 		switch xi := cachedvalue.(type) {
 		case []byte:
 			if err := cachedcontent.GobDecode(xi); err != nil {
@@ -107,11 +107,11 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 			return false
 		}
 
-		c.Response().Header().Set(echo.HeaderContentType, cachedcontent.ContentType)
-		c.Response().Header().Set(echo.HeaderLastModified, cachedcontent.LastModified)
-		c.Response().Header().Set(echo.HeaderContentLength, fmt.Sprintf("%d", len(string(cachedcontent.Content))))
+		c.Response().Header().Set(echo.HeaderContentType, cachedcontent.GetContentType())
+		c.Response().Header().Set(echo.HeaderLastModified, cachedcontent.GetLastModified())
+		c.Response().Header().Set(echo.HeaderContentLength, fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))))
 		c.Response().WriteHeader(http.StatusOK)
-		_, err := c.Response().Write(cachedcontent.Content)
+		_, err := c.Response().Write(cachedcontent.GetContent())
 		if err != nil {
 			log.Error(err.Error())
 			return false
@@ -123,10 +123,8 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 }
 
 func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requesturi string) {
-	cachedresponse := actor.CachedContent{}
-	cachedresponse.ContentType = mimetype
-	cachedresponse.LastModified = time.Now().UTC().Format(http.TimeFormat)
-	cachedresponse.Content = data
+	cachedresponse := actor.NewCachedContentOperator()
+	cachedresponse.Set(mimetype, time.Now().UTC().Format(http.TimeFormat), data)
 	encodedcached, err := cachedresponse.GobEncode()
 	if err != nil {
 		log.Error(err)
