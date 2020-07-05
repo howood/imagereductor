@@ -1,6 +1,7 @@
 package caches
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -24,6 +25,7 @@ type RedisInstance struct {
 	client               *redis.Client
 	redisdb              int
 	connectionkey        int
+	ctx                  context.Context
 }
 
 func init() {
@@ -31,13 +33,13 @@ func init() {
 }
 
 // インスタンス作成用のメソッド
-func NewRedis(connectionpersistent bool, redisdb int) *RedisInstance {
+func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *RedisInstance {
 
-	log.Debug("----DNS----")
-	log.Debug(os.Getenv("REDISHOST") + ":" + fmt.Sprint(os.Getenv("REDISPORT")))
-	log.Debug(os.Getenv("REDISPASSWORD"))
-	log.Debug(redisdb)
-	log.Debug(redisConnectionMap)
+	log.Debug(ctx, "----DNS----")
+	log.Debug(ctx, os.Getenv("REDISHOST")+":"+fmt.Sprint(os.Getenv("REDISPORT")))
+	log.Debug(ctx, os.Getenv("REDISPASSWORD"))
+	log.Debug(ctx, redisdb)
+	log.Debug(ctx, redisConnectionMap)
 	var connectionkey int
 	if connectionpersistent == true {
 		connectionkey = redisdb
@@ -45,8 +47,8 @@ func NewRedis(connectionpersistent bool, redisdb int) *RedisInstance {
 		rand.Seed(time.Now().UnixNano())
 		connectionkey = rand.Intn(REDIS_CONNECTION_RANDMAX)
 	}
-	if redisConnectionMap[connectionkey] == nil || checkConnect(connectionkey) == false {
-		log.Info("--- Create Redis Connection ---  ")
+	if redisConnectionMap[connectionkey] == nil || checkConnect(ctx, connectionkey) == false {
+		log.Info(ctx, "--- Create Redis Connection ---  ")
 		if err := createNewConnect(redisdb, connectionkey); err != nil {
 			panic(err)
 		}
@@ -56,22 +58,23 @@ func NewRedis(connectionpersistent bool, redisdb int) *RedisInstance {
 		client:               redisConnectionMap[connectionkey],
 		redisdb:              redisdb,
 		connectionkey:        connectionkey,
+		ctx:                  ctx,
 	}
 
 	//	defer I.client.Close()
 	return I
 }
 func (i RedisInstance) Set(key string, value interface{}, expired time.Duration) error {
-	log.Debug("-----SET----")
-	log.Debug(key)
-	log.Debug(expired)
+	log.Debug(i.ctx, "-----SET----")
+	log.Debug(i.ctx, key)
+	log.Debug(i.ctx, expired)
 	return i.client.Set(key, value, expired).Err()
 }
 
 func (i RedisInstance) Get(key string) (interface{}, bool) {
 	cachedvalue, err := i.client.Get(key).Result()
-	log.Debug("-----GET----")
-	log.Debug(key)
+	log.Debug(i.ctx, "-----GET----")
+	log.Debug(i.ctx, key)
 	if err == redis.Nil {
 		return nil, false
 	} else if err != nil {
@@ -82,16 +85,16 @@ func (i RedisInstance) Get(key string) (interface{}, bool) {
 }
 
 func (i RedisInstance) Del(key string) error {
-	log.Debug("-----DEL----")
-	log.Debug(key)
+	log.Debug(i.ctx, "-----DEL----")
+	log.Debug(i.ctx, key)
 	return i.client.Del(key).Err()
 }
 
 func (i RedisInstance) DelBulk(key string) error {
-	log.Debug("-----DelBulk----")
-	log.Debug(key)
+	log.Debug(i.ctx, "-----DelBulk----")
+	log.Debug(i.ctx, key)
 	targetkeys := i.client.Keys(key)
-	log.Debug(targetkeys.Val())
+	log.Debug(i.ctx, targetkeys.Val())
 	for _, key := range targetkeys.Val() {
 		if err := i.client.Del(key).Err(); err != nil {
 			return err
@@ -109,9 +112,9 @@ func (i RedisInstance) CloseConnect() error {
 	return nil
 }
 
-func checkConnect(connectionkey int) bool {
+func checkConnect(ctx context.Context, connectionkey int) bool {
 	if err := checkPing(connectionkey); err != nil {
-		log.Error(err)
+		log.Error(ctx, err)
 		return false
 	}
 	return true

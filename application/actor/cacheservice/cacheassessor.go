@@ -1,6 +1,7 @@
 package cacheservice
 
 import (
+	"context"
 	"errors"
 	"os"
 	"strconv"
@@ -12,20 +13,23 @@ import (
 
 type CacheAssessor struct {
 	instance caches.CacheInstance
+	ctx      context.Context
 }
 
 // インスタンス作成用のメソッド
-func NewCacheAssessor(db int) *CacheAssessor {
+func NewCacheAssessor(ctx context.Context, db int) *CacheAssessor {
 	var I *CacheAssessor
-	log.Debug("", "use:"+os.Getenv("CACHE_TYPE"))
+	log.Debug(ctx, "use:"+os.Getenv("CACHE_TYPE"))
 	switch os.Getenv("CACHE_TYPE") {
 	case "redis":
 		I = &CacheAssessor{
-			instance: caches.NewRedis(true, db),
+			instance: caches.NewRedis(ctx, true, db),
+			ctx:      ctx,
 		}
 	case "gocache":
 		I = &CacheAssessor{
-			instance: caches.NewGoCacheClient(),
+			instance: caches.NewGoCacheClient(ctx),
+			ctx:      ctx,
 		}
 	default:
 		panic(errors.New("Invalid CACHE_TYPE"))

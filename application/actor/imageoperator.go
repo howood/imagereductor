@@ -2,6 +2,7 @@ package actor
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -20,19 +21,21 @@ import (
 type ImageOperator struct {
 	object *entity.ImageObject
 	option *entity.ImageObjectOption
+	ctx    context.Context
 }
 
 // ImageOperatorOption is Option of ImageOperator struct
 type ImageOperatorOption entity.ImageObjectOption
 
 // NewImageOperator create ImageOperator
-func NewImageOperator(contenttype string, option ImageOperatorOption) repository.ImageObjectRepository {
+func NewImageOperator(ctx context.Context, contenttype string, option ImageOperatorOption) repository.ImageObjectRepository {
 	objectOption := entity.ImageObjectOption(option)
 	return &ImageOperator{
 		object: &entity.ImageObject{
 			ContentType: contenttype,
 		},
 		option: &objectOption,
+		ctx:    ctx,
 	}
 }
 
@@ -43,7 +46,7 @@ func (im *ImageOperator) Decode(src io.Reader) error {
 	rectang := im.object.Source.Bounds()
 	im.object.OriginX = rectang.Bounds().Dx()
 	im.object.OriginY = rectang.Bounds().Dy()
-	log.Debug(fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
+	log.Debug(im.ctx, fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
 	return err
 }
 
@@ -96,7 +99,7 @@ func (im *ImageOperator) scale(src image.Image, rect image.Rectangle, scaler dra
 }
 
 func (im *ImageOperator) calcResizeXY() {
-	log.Debug(fmt.Sprintf("OptionX: %d / OptionY: %d", im.option.Width, im.option.Height))
+	log.Debug(im.ctx, fmt.Sprintf("OptionX: %d / OptionY: %d", im.option.Width, im.option.Height))
 	switch {
 	case (im.option.Width == 0 && im.option.Height == 0):
 		im.object.DstX = im.object.OriginX
@@ -110,7 +113,7 @@ func (im *ImageOperator) calcResizeXY() {
 	case (im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) > float64(im.option.Height)/float64(im.option.Width)):
 		im.calcResizeFitOptionHeight()
 	}
-	log.Debug(fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
+	log.Debug(im.ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
 }
 
 func (im *ImageOperator) calcResizeFitOptionWidth() {

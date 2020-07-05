@@ -1,6 +1,7 @@
 package storageservice
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -14,22 +15,25 @@ const RecordNotFoundMsg = "status code: 404"
 type CloudStorageAssessor struct {
 	instance cloudstorages.StorageInstance
 	bucket   string
+	ctx      context.Context
 }
 
 // インスタンス作成用のメソッド
-func NewCloudStorageAssessor() *CloudStorageAssessor {
+func NewCloudStorageAssessor(ctx context.Context) *CloudStorageAssessor {
 	var I *CloudStorageAssessor
-	log.Debug("", "use:"+os.Getenv("STORAGE_TYPE"))
+	log.Debug(ctx, "use:"+os.Getenv("STORAGE_TYPE"))
 	switch os.Getenv("STORAGE_TYPE") {
 	case "s3":
 		I = &CloudStorageAssessor{
-			instance: cloudstorages.NewS3(),
+			instance: cloudstorages.NewS3(ctx),
 			bucket:   cloudstorages.S3_BUCKET_UPLOADFILES,
+			ctx:      ctx,
 		}
 	case "gcs":
 		I = &CloudStorageAssessor{
-			instance: cloudstorages.NewGCS(),
+			instance: cloudstorages.NewGCS(ctx),
 			bucket:   cloudstorages.GCS_BUCKET_UPLOADFILES,
+			ctx:      ctx,
 		}
 	default:
 		panic(errors.New("Invalid STORAGE_TYPE"))

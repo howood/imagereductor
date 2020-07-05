@@ -2,6 +2,7 @@ package actor
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 
 	"github.com/howood/imagereductor/domain/entity"
@@ -10,6 +11,7 @@ import (
 
 type CachedContentOperator struct {
 	chachedData entity.CachedContent
+	ctx         context.Context
 }
 
 func NewCachedContentOperator() repository.CachedContentRepository {
@@ -32,7 +34,6 @@ func (e *CachedContentOperator) GetLastModified() string {
 func (e *CachedContentOperator) GetContent() []byte {
 	return e.chachedData.Content
 }
-
 
 // シリアライズ用のメソッド
 // レシーバ(e)の値をシリアライズしてbyte配列にする
