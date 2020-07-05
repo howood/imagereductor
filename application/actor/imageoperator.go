@@ -71,25 +71,21 @@ func (im *ImageOperator) Resize() {
 // ImageByte get image bytes
 func (im *ImageOperator) ImageByte() ([]byte, error) {
 	buf := new(bytes.Buffer)
+	var err error
 	switch im.object.ContentType {
 	case "image/jpeg":
-		if err := jpeg.Encode(buf, im.object.Dst, nil); err != nil {
-			return nil, err
-		}
-		return buf.Bytes(), nil
+		err = jpeg.Encode(buf, im.object.Dst, nil)
 	case "image/png":
-		if err := png.Encode(buf, im.object.Dst); err != nil {
-			return nil, err
-		}
-		return buf.Bytes(), nil
+		err = png.Encode(buf, im.object.Dst)
 	case "image/gif":
-		if err := gif.Encode(buf, im.object.Dst, nil); err != nil {
-			return nil, err
-		}
-		return buf.Bytes(), nil
+		err = gif.Encode(buf, im.object.Dst, nil)
 	default:
-		return nil, errors.New("invalid format")
+		err = errors.New("invalid format")
 	}
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func (im *ImageOperator) scale(src image.Image, rect image.Rectangle, scaler draw.Scaler) image.Image {
@@ -104,13 +100,11 @@ func (im *ImageOperator) calcResizeXY() {
 	case (im.option.Width == 0 && im.option.Height == 0):
 		im.object.DstX = im.object.OriginX
 		im.object.DstY = im.object.OriginY
-	case (im.option.Width != 0 && im.option.Height == 0):
+	case (im.option.Width != 0 && im.option.Height == 0),
+		(im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) <= float64(im.option.Height)/float64(im.option.Width)):
 		im.calcResizeFitOptionWidth()
-	case (im.option.Width == 0 && im.option.Height != 0):
-		im.calcResizeFitOptionHeight()
-	case (im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) <= float64(im.option.Height)/float64(im.option.Width)):
-		im.calcResizeFitOptionWidth()
-	case (im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) > float64(im.option.Height)/float64(im.option.Width)):
+	case (im.option.Width == 0 && im.option.Height != 0),
+		(im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) > float64(im.option.Height)/float64(im.option.Width)):
 		im.calcResizeFitOptionHeight()
 	}
 	log.Debug(im.ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
@@ -118,18 +112,16 @@ func (im *ImageOperator) calcResizeXY() {
 
 func (im *ImageOperator) calcResizeFitOptionWidth() {
 	im.object.DstX = im.option.Width
+	im.object.DstY = im.object.OriginY
 	if im.object.OriginX != 0 {
 		im.object.DstY = int(float64(im.option.Width) * (float64(im.object.OriginY) / float64(im.object.OriginX)))
-	} else {
-		im.object.DstY = im.object.OriginY
 	}
 }
 
 func (im *ImageOperator) calcResizeFitOptionHeight() {
+	im.object.DstX = im.object.OriginX
 	if im.object.OriginY != 0 {
 		im.object.DstX = int(float64(im.option.Height) * (float64(im.object.OriginX) / float64(im.object.OriginY)))
-	} else {
-		im.object.DstX = im.object.OriginX
 	}
 	im.object.DstY = im.option.Height
 }
