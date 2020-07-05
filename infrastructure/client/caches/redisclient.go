@@ -14,12 +14,15 @@ import (
 )
 
 const (
-	REDIS_MAX_RETRY          = 3
-	REDIS_CONNECTION_RANDMAX = 10000
+	// RedisMaxRetry is max retry count
+	RedisMaxRetry = 3
+	// RedisConnectionRandmax is using generate connection key
+	RedisConnectionRandmax = 10000
 )
 
 var redisConnectionMap map[int]*redis.Client
 
+// RedisInstance struct
 type RedisInstance struct {
 	ConnectionPersistent bool
 	client               *redis.Client
@@ -32,7 +35,7 @@ func init() {
 	redisConnectionMap = make(map[int]*redis.Client, 0)
 }
 
-// インスタンス作成用のメソッド
+// NewRedis creates a new RedisInstance
 func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *RedisInstance {
 
 	log.Debug(ctx, "----DNS----")
@@ -45,7 +48,7 @@ func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *Redi
 		connectionkey = redisdb
 	} else {
 		rand.Seed(time.Now().UnixNano())
-		connectionkey = rand.Intn(REDIS_CONNECTION_RANDMAX)
+		connectionkey = rand.Intn(RedisConnectionRandmax)
 	}
 	if redisConnectionMap[connectionkey] == nil || checkConnect(ctx, connectionkey) == false {
 		log.Info(ctx, "--- Create Redis Connection ---  ")
@@ -64,6 +67,8 @@ func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *Redi
 	//	defer I.client.Close()
 	return I
 }
+
+// Set puts to cache
 func (i RedisInstance) Set(key string, value interface{}, expired time.Duration) error {
 	log.Debug(i.ctx, "-----SET----")
 	log.Debug(i.ctx, key)
@@ -71,6 +76,7 @@ func (i RedisInstance) Set(key string, value interface{}, expired time.Duration)
 	return i.client.Set(key, value, expired).Err()
 }
 
+// Get gets from cache
 func (i RedisInstance) Get(key string) (interface{}, bool) {
 	cachedvalue, err := i.client.Get(key).Result()
 	log.Debug(i.ctx, "-----GET----")
@@ -84,12 +90,14 @@ func (i RedisInstance) Get(key string) (interface{}, bool) {
 	}
 }
 
+// Del deletes from cache
 func (i RedisInstance) Del(key string) error {
 	log.Debug(i.ctx, "-----DEL----")
 	log.Debug(i.ctx, key)
 	return i.client.Del(key).Err()
 }
 
+// DelBulk bulk deletes from cache
 func (i RedisInstance) DelBulk(key string) error {
 	log.Debug(i.ctx, "-----DelBulk----")
 	log.Debug(i.ctx, key)
@@ -103,6 +111,7 @@ func (i RedisInstance) DelBulk(key string) error {
 	return nil
 }
 
+// CloseConnect close connection
 func (i RedisInstance) CloseConnect() error {
 	if i.ConnectionPersistent == false {
 		err := i.client.Close()
@@ -138,7 +147,7 @@ func createNewConnect(redisdb int, connectionkey int) error {
 		Addr:       os.Getenv("REDISHOST") + ":" + fmt.Sprint(os.Getenv("REDISPORT")),
 		Password:   os.Getenv("REDISPASSWORD"),
 		DB:         redisdb,
-		MaxRetries: REDIS_MAX_RETRY,
+		MaxRetries: RedisMaxRetry,
 		TLSConfig:  tlsConfig,
 	})
 	return checkPing(connectionkey)

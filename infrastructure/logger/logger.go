@@ -12,16 +12,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const PackegeName = "imagereductor"
+const packegeName = "imagereductor"
 
 const (
-	LogModeFew    = "few"
-	LogModeMedium = "minimum"
+	logModeFew    = "few"
+	logModeMedium = "minimum"
 )
 
 var log *logrus.Entry
 
-type LogEntry logrus.Entry
+// PlainFormatter struct
 type PlainFormatter struct {
 	TimestampFormat string
 	LevelDesc       []string
@@ -39,9 +39,9 @@ func init() {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
 		switch os.Getenv("LOG_MODE") {
-		case LogModeFew:
+		case logModeFew:
 			logrus.SetLevel(logrus.WarnLevel)
-		case LogModeMedium:
+		case logModeMedium:
 			logrus.SetLevel(logrus.ErrorLevel)
 		default:
 			logrus.SetLevel(logrus.InfoLevel)
@@ -51,35 +51,36 @@ func init() {
 	log = logrus.WithFields(logrus.Fields{})
 }
 
-func GetLogger(xReqID string) *logrus.Entry {
-	return logrus.WithField(requestid.KeyRequestID, xReqID)
-}
-
+// Debug log output with DEBUG
 func Debug(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
 	log.Debug("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
+// Info log output with Info
 func Info(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
 	log.Info("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
+// Warn log output with Warn
 func Warn(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
 	log.Warn("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
+// Error log output with Error
 func Error(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
 	log.Error("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
+// Format is formatted log output
 func (f *PlainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
-	return []byte(fmt.Sprintf("[%s] [%s] [%s] [%s] %s \n", timestamp, f.LevelDesc[entry.Level], PackegeName, entry.Data[requestid.KeyRequestID], entry.Message)), nil
+	return []byte(fmt.Sprintf("[%s] [%s] [%s] [%s] %s \n", timestamp, f.LevelDesc[entry.Level], packegeName, entry.Data[requestid.KeyRequestID], entry.Message)), nil
 }

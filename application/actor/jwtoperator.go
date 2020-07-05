@@ -11,15 +11,19 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
+// TokenExpired is token's expired
 const TokenExpired = 60
 
+// TokenSecret define token secrets
 var TokenSecret = os.Getenv("TOKEN_SECRET")
 
+// JwtOperator struct
 type JwtOperator struct {
 	jwtClaims *entity.JwtClaims
 	ctx       context.Context
 }
 
+// NewJwtOperator creates a new JwtClaimsRepository
 func NewJwtOperator(ctx context.Context, username string, admin bool, expired time.Duration) repository.JwtClaimsRepository {
 	return &JwtOperator{
 		jwtClaims: &entity.JwtClaims{
@@ -33,6 +37,7 @@ func NewJwtOperator(ctx context.Context, username string, admin bool, expired ti
 	}
 }
 
+// CreateToken creates a new token
 func (jc *JwtOperator) CreateToken(secret string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jc.jwtClaims)
 	tokenstring, err := token.SignedString([]byte(secret))

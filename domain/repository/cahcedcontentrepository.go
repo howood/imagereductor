@@ -1,5 +1,6 @@
 package repository
 
+// CachedContentRepository interface
 type CachedContentRepository interface {
 	Set(contentType, lastModified string, content []byte)
 	GetContentType() string
