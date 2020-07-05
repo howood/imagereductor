@@ -13,7 +13,7 @@ import (
 // RecordNotFoundMsg define status 404 message
 const RecordNotFoundMsg = "status code: 404"
 
-// CacheAssessor struct
+// CloudStorageAssessor struct
 type CloudStorageAssessor struct {
 	instance cloudstorages.StorageInstance
 	bucket   string

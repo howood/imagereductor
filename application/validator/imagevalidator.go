@@ -60,7 +60,7 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 		return errors.New(err.Error())
 	}
 	if utils.StringArrayContains(val.imagetype, format) == false {
-		return errors.New(fmt.Sprintf("Invalid Image type: %s", strings.Join(val.imagetype, "/")))
+		return fmt.Errorf("Invalid Image type: %s", strings.Join(val.imagetype, "/"))
 	}
 	sizeerrormsg := make([]string, 0)
 	if val.maxwidth != 0 && imageinfo.Width > val.maxwidth {

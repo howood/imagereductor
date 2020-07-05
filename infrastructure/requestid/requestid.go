@@ -17,7 +17,6 @@ func generateRequestID() string {
 func GetRequestID(r *http.Request) string {
 	if r.Header.Get(KeyRequestID) != "" {
 		return r.Header.Get(KeyRequestID)
-	} else {
-		return generateRequestID()
 	}
+	return generateRequestID()
 }

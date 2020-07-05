@@ -27,14 +27,17 @@ func (e *CachedContentOperator) Set(contentType, lastModified string, content []
 	e.chachedData.Content = content
 }
 
-// Get returns  contenttype of cahced content
+// GetContentType returns contenttype of cahced content
 func (e *CachedContentOperator) GetContentType() string {
 	return e.chachedData.ContentType
 }
+
+// GetLastModified returns lastmodified of cahced content
 func (e *CachedContentOperator) GetLastModified() string {
 	return e.chachedData.LastModified
 }
 
+// GetLastModified returns content of cahced content
 func (e *CachedContentOperator) GetContent() []byte {
 	return e.chachedData.Content
 }

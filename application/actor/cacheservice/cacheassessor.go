@@ -44,9 +44,8 @@ func (ca *CacheAssessor) Get(index string) (interface{}, bool) {
 	cachedvalue, cachedfound := ca.instance.Get(index)
 	if cachedfound {
 		return cachedvalue, true
-	} else {
-		return "", false
 	}
+	return "", false
 }
 
 // Set puts cache contents
@@ -61,6 +60,7 @@ func (ca *CacheAssessor) Delete(index string) error {
 	return ca.instance.Del(index)
 }
 
+// GetChacheExpired get cache expired
 func GetChacheExpired() time.Duration {
 	expired, err := strconv.Atoi(os.Getenv("CACHEEXPIED"))
 	if err != nil {
@@ -69,6 +69,7 @@ func GetChacheExpired() time.Duration {
 	return time.Duration(expired)
 }
 
+// GetCachedDB get cache db
 func GetCachedDB() int {
 	db, err := strconv.Atoi(os.Getenv("CACHEDDB"))
 	if err != nil {
@@ -77,6 +78,7 @@ func GetCachedDB() int {
 	return db
 }
 
+// GetCachedDB get session db
 func GetSessionDB() int {
 	db, err := strconv.Atoi(os.Getenv("SESSIONDB"))
 	if err != nil {
