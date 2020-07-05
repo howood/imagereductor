@@ -4,6 +4,7 @@ import (
 	"math"
 )
 
+// RoundFloat rounds input float64 with decimals
 func RoundFloat(input float64, decimals int) float64 {
 	var pow float64 = 1
 	for i := 0; i < decimals; i++ {

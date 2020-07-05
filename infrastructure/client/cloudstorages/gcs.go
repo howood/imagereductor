@@ -12,15 +12,19 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
-var GCS_BUCKET_UPLOADFILES = os.Getenv("GCS_BUKET")
-var GCS_PROJECTID = os.Getenv("GCS_PROJECTID")
+// GcsBucketUploadfiles is bucket to upload
+var GcsBucketUploadfiles = os.Getenv("GCS_BUKET")
 
+// GcsProjectID is GCS Project ID
+var GcsProjectID = os.Getenv("GcsProjectID")
+
+// GCSInstance struct
 type GCSInstance struct {
 	client *storage.Client
 	ctx    context.Context
 }
 
-// インスタンス作成用のメソッド
+// NewGCS creates a new GCSInstance
 func NewGCS(ctx context.Context) *GCSInstance {
 	log.Debug(ctx, "----GCS DNS----")
 	var I *GCSInstance
@@ -37,14 +41,15 @@ func NewGCS(ctx context.Context) *GCSInstance {
 }
 
 func (gcsinstance GCSInstance) init() {
-	if _, exitstserr := gcsinstance.client.Bucket(GCS_BUCKET_UPLOADFILES).Attrs(gcsinstance.ctx); exitstserr != nil {
-		if err := gcsinstance.client.Bucket(GCS_BUCKET_UPLOADFILES).Create(gcsinstance.ctx, GCS_PROJECTID, nil); err != nil {
+	if _, exitstserr := gcsinstance.client.Bucket(GcsBucketUploadfiles).Attrs(gcsinstance.ctx); exitstserr != nil {
+		if err := gcsinstance.client.Bucket(GcsBucketUploadfiles).Create(gcsinstance.ctx, GcsProjectID, nil); err != nil {
 			log.Debug(gcsinstance.ctx, "***CreateError****")
 			log.Debug(gcsinstance.ctx, err)
 		}
 	}
 }
 
+// Put puts to storage
 func (gcsinstance GCSInstance) Put(bucket string, path string, file io.ReadSeeker) error {
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
@@ -66,6 +71,7 @@ func (gcsinstance GCSInstance) Put(bucket string, path string, file io.ReadSeeke
 	return nil
 }
 
+// Get gets from storage
 func (gcsinstance GCSInstance) Get(bucket string, key string) (string, []byte, error) {
 	log.Debug(gcsinstance.ctx, bucket)
 	log.Debug(gcsinstance.ctx, key)
@@ -86,6 +92,7 @@ func (gcsinstance GCSInstance) Get(bucket string, key string) (string, []byte, e
 	return contenttype, response, nil
 }
 
+// Delete deletes from storage
 func (gcsinstance GCSInstance) Delete(bucket string, key string) error {
 	err := gcsinstance.client.Bucket(bucket).Object(key).Delete(gcsinstance.ctx)
 	return err

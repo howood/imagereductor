@@ -2,6 +2,7 @@ package entity
 
 import "image"
 
+// ImageObject entity
 type ImageObject struct {
 	Source      image.Image
 	Dst         image.Image

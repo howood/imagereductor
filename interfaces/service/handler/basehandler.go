@@ -11,14 +11,21 @@ import (
 )
 
 const (
+	// FormKeyStorageKey is form key of storage key
 	FormKeyStorageKey = "key"
-	FormKeyWidth      = "w"
-	FormKeyHeight     = "h"
-	FormKeyQuality    = "q"
+	// FormKeyWidth is form key of width
+	FormKeyWidth = "w"
+	// FormKeyHeight is form key of height
+	FormKeyHeight = "h"
+	// FormKeyQuality is form key of quality
+	FormKeyQuality = "q"
+	// FormKeyUploadFile is form key of uploadfile
 	FormKeyUploadFile = "uploadfile"
-	FormKeyPath       = "path"
+	// FormKeyPath is form key of path
+	FormKeyPath = "path"
 )
 
+// BaseHandler struct
 type BaseHandler struct {
 	ctx context.Context
 }

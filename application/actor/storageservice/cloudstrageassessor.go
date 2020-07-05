@@ -10,15 +10,17 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
+// RecordNotFoundMsg define status 404 message
 const RecordNotFoundMsg = "status code: 404"
 
+// CacheAssessor struct
 type CloudStorageAssessor struct {
 	instance cloudstorages.StorageInstance
 	bucket   string
 	ctx      context.Context
 }
 
-// インスタンス作成用のメソッド
+// NewCloudStorageAssessor creates a new CloudStorageAssessor
 func NewCloudStorageAssessor(ctx context.Context) *CloudStorageAssessor {
 	var I *CloudStorageAssessor
 	log.Debug(ctx, "use:"+os.Getenv("STORAGE_TYPE"))
@@ -26,13 +28,13 @@ func NewCloudStorageAssessor(ctx context.Context) *CloudStorageAssessor {
 	case "s3":
 		I = &CloudStorageAssessor{
 			instance: cloudstorages.NewS3(ctx),
-			bucket:   cloudstorages.S3_BUCKET_UPLOADFILES,
+			bucket:   cloudstorages.S3BucketUploadfiles,
 			ctx:      ctx,
 		}
 	case "gcs":
 		I = &CloudStorageAssessor{
 			instance: cloudstorages.NewGCS(ctx),
-			bucket:   cloudstorages.GCS_BUCKET_UPLOADFILES,
+			bucket:   cloudstorages.GcsBucketUploadfiles,
 			ctx:      ctx,
 		}
 	default:
@@ -41,14 +43,17 @@ func NewCloudStorageAssessor(ctx context.Context) *CloudStorageAssessor {
 	return I
 }
 
+// Get returns storage contents
 func (csa *CloudStorageAssessor) Get(key string) (string, []byte, error) {
 	return csa.instance.Get(csa.bucket, key)
 }
 
+// Put puts storage contents
 func (csa *CloudStorageAssessor) Put(path string, file io.ReadSeeker) error {
 	return csa.instance.Put(csa.bucket, path, file)
 }
 
+// Delete remove storage contents
 func (csa *CloudStorageAssessor) Delete(key string) error {
 	return csa.instance.Delete(csa.bucket, key)
 }

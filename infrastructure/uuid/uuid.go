@@ -7,18 +7,22 @@ import (
 )
 
 const (
-	SEGMENTIO_KSUID = "segmentio_ksuid"
-	SATORI_UUID     = "satori_gouuid"
-	RS_XID          = "rs_xid"
+	// SegmentioKsuid is type of id
+	SegmentioKsuid = "segmentio_ksuid"
+	// SatoriUUID is type of id
+	SatoriUUID = "satori_gouuid"
+	// RsXid is type of id
+	RsXid = "rs_xid"
 )
 
+// GetUUID returns a new uuid
 func GetUUID(systemuuid string) string {
 	switch systemuuid {
-	case SEGMENTIO_KSUID:
+	case SegmentioKsuid:
 		return ksuid.New().String()
-	case SATORI_UUID:
+	case SatoriUUID:
 		return uuid.Must(uuid.NewV4()).String()
-	case RS_XID:
+	case RsXid:
 		return xid.New().String()
 	default:
 		return xid.New().String()

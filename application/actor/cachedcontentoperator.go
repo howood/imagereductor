@@ -9,21 +9,25 @@ import (
 	"github.com/howood/imagereductor/domain/repository"
 )
 
+// CachedContentOperator struct
 type CachedContentOperator struct {
 	chachedData entity.CachedContent
 	ctx         context.Context
 }
 
+// NewCachedContentOperator creates a new CachedContentRepository
 func NewCachedContentOperator() repository.CachedContentRepository {
 	return &CachedContentOperator{}
 }
 
+//Set sets contentType,lastModified and  content to  cahced content
 func (e *CachedContentOperator) Set(contentType, lastModified string, content []byte) {
 	e.chachedData.ContentType = contentType
 	e.chachedData.LastModified = lastModified
 	e.chachedData.Content = content
 }
 
+// Get returns  contenttype of cahced content
 func (e *CachedContentOperator) GetContentType() string {
 	return e.chachedData.ContentType
 }
@@ -35,8 +39,7 @@ func (e *CachedContentOperator) GetContent() []byte {
 	return e.chachedData.Content
 }
 
-// シリアライズ用のメソッド
-// レシーバ(e)の値をシリアライズしてbyte配列にする
+// GobEncode serialized cached data to bytes
 func (e *CachedContentOperator) GobEncode() ([]byte, error) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
@@ -53,6 +56,7 @@ func (e *CachedContentOperator) GobEncode() ([]byte, error) {
 	return w.Bytes(), nil
 }
 
+// GobDecode decode bytes to cached data
 func (e *CachedContentOperator) GobDecode(buf []byte) error {
 	r := bytes.NewBuffer(buf)
 	decoder := gob.NewDecoder(r)

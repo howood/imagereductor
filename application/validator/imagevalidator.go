@@ -14,15 +14,22 @@ import (
 )
 
 const (
-	IMAGETYPE_JPEG = "jpeg"
-	IMAGETYPE_GIF  = "gif"
-	IMAGETYPE_PNG  = "png"
-	IMAGETYPE_BMP  = "bmp"
-	IMAGETYPE_TIFF = "tiff"
+	// ImageTypeJpeg is type of Jpeg
+	ImageTypeJpeg = "jpeg"
+	// ImageTypeGif is type of Gif
+	ImageTypeGif = "gif"
+	// ImageTypePng is type of PNG
+	ImageTypePng = "png"
+	// ImageTypeBmp is type of BMP
+	ImageTypeBmp = "bmp"
+	// ImageTypeTiff is type of TIFF
+	ImageTypeTiff = "tiff"
 )
 
-var IMAGETYPE_LIST = []string{IMAGETYPE_JPEG, IMAGETYPE_GIF, IMAGETYPE_PNG, IMAGETYPE_BMP, IMAGETYPE_TIFF}
+// ImageTypeList is list of image types
+var ImageTypeList = []string{ImageTypeJpeg, ImageTypeGif, ImageTypePng, ImageTypeBmp, ImageTypeTiff}
 
+// ImageValidator struct
 type ImageValidator struct {
 	imagetype   []string
 	maxwidth    int
@@ -31,6 +38,7 @@ type ImageValidator struct {
 	ctx         context.Context
 }
 
+// NewImageValidator creates a new ImageValidator
 func NewImageValidator(ctx context.Context, imagetype []string, maxwidth, maxheight, maxfilesize int) *ImageValidator {
 	I := &ImageValidator{
 		imagetype:   imagetype,
@@ -43,6 +51,7 @@ func NewImageValidator(ctx context.Context, imagetype []string, maxwidth, maxhei
 	return I
 }
 
+// Validate process to validate  uploadfile
 func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 	imageinfo, format, err := image.DecodeConfig(uploadfile)
 	log.Debug(val.ctx, fmt.Sprintf("%#v", imageinfo))
@@ -77,7 +86,7 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 func (val *ImageValidator) convertImageType() {
 	replacelist := make([]string, 0)
 	for _, imagetype := range val.imagetype {
-		if utils.StringArrayContains(IMAGETYPE_LIST, imagetype) == true {
+		if utils.StringArrayContains(ImageTypeList, imagetype) == true {
 			replacelist = append(replacelist, imagetype)
 		}
 	}

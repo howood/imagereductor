@@ -11,12 +11,13 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
+// CacheAssessor struct
 type CacheAssessor struct {
 	instance caches.CacheInstance
 	ctx      context.Context
 }
 
-// インスタンス作成用のメソッド
+// NewCacheAssessor creates a new CacheAssessor
 func NewCacheAssessor(ctx context.Context, db int) *CacheAssessor {
 	var I *CacheAssessor
 	log.Debug(ctx, "use:"+os.Getenv("CACHE_TYPE"))
@@ -37,6 +38,7 @@ func NewCacheAssessor(ctx context.Context, db int) *CacheAssessor {
 	return I
 }
 
+// Get returns cache contents
 func (ca *CacheAssessor) Get(index string) (interface{}, bool) {
 	defer ca.instance.CloseConnect()
 	cachedvalue, cachedfound := ca.instance.Get(index)
@@ -47,11 +49,13 @@ func (ca *CacheAssessor) Get(index string) (interface{}, bool) {
 	}
 }
 
+// Set puts cache contents
 func (ca *CacheAssessor) Set(index string, value interface{}, expired time.Duration) error {
 	defer ca.instance.CloseConnect()
 	return ca.instance.Set(index, value, expired*time.Second)
 }
 
+// Delete remove cache contents
 func (ca *CacheAssessor) Delete(index string) error {
 	defer ca.instance.CloseConnect()
 	return ca.instance.Del(index)

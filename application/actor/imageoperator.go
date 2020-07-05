@@ -27,7 +27,7 @@ type ImageOperator struct {
 // ImageOperatorOption is Option of ImageOperator struct
 type ImageOperatorOption entity.ImageObjectOption
 
-// NewImageOperator create ImageOperator
+// NewImageOperator creates a new ImageObjectRepository
 func NewImageOperator(ctx context.Context, contenttype string, option ImageOperatorOption) repository.ImageObjectRepository {
 	objectOption := entity.ImageObjectOption(option)
 	return &ImageOperator{

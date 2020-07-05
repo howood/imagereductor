@@ -16,14 +16,15 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
-var S3_BUCKET_UPLOADFILES = os.Getenv("AWS_S3_BUKET")
+var S3BucketUploadfiles = os.Getenv("AWS_S3_BUKET")
 
+// S3Instance struct
 type S3Instance struct {
 	client *s3.S3
 	ctx    context.Context
 }
 
-//ダウンロードするオブジェクトの構造体
+// downloader struct
 type downloader struct {
 	*s3manager.Downloader
 	bucket string
@@ -31,7 +32,7 @@ type downloader struct {
 	dir    string
 }
 
-// インスタンス作成用のメソッド
+// NewS3 creates a new S3Instance
 func NewS3(ctx context.Context) *S3Instance {
 	log.Debug(ctx, "----S3 DNS----")
 	log.Debug(ctx, os.Getenv("AWS_S3_REGION"))
@@ -69,8 +70,8 @@ func NewS3(ctx context.Context) *S3Instance {
 }
 
 func (s3instance S3Instance) init() {
-	if _, bucketerr := s3instance.client.HeadBucket(&s3.HeadBucketInput{Bucket: aws.String(S3_BUCKET_UPLOADFILES)}); bucketerr != nil {
-		if result, err := s3instance.client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(S3_BUCKET_UPLOADFILES)}); err != nil {
+	if _, bucketerr := s3instance.client.HeadBucket(&s3.HeadBucketInput{Bucket: aws.String(S3BucketUploadfiles)}); bucketerr != nil {
+		if result, err := s3instance.client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(S3BucketUploadfiles)}); err != nil {
 			log.Debug(s3instance.ctx, "***CreateError****")
 			log.Debug(s3instance.ctx, err)
 			log.Debug(s3instance.ctx, result)
@@ -78,6 +79,7 @@ func (s3instance S3Instance) init() {
 	}
 }
 
+// Put puts to storage
 func (s3instance S3Instance) Put(bucket string, path string, file io.ReadSeeker) error {
 	//ファイルのオフセットを先頭に戻す
 	file.Seek(0, os.SEEK_SET)
@@ -96,6 +98,7 @@ func (s3instance S3Instance) Put(bucket string, path string, file io.ReadSeeker)
 	return err
 }
 
+// Get gets from storage
 func (s3instance S3Instance) Get(bucket string, key string) (string, []byte, error) {
 	log.Debug(s3instance.ctx, bucket)
 	log.Debug(s3instance.ctx, key)
@@ -118,6 +121,7 @@ func (s3instance S3Instance) Get(bucket string, key string) (string, []byte, err
 	return contenttype, buf.Bytes(), nil
 }
 
+// Delete deletes from storage
 func (s3instance S3Instance) Delete(bucket string, key string) error {
 	result, err := s3instance.client.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
