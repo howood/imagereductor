@@ -37,7 +37,7 @@ func (e *CachedContentOperator) GetLastModified() string {
 	return e.chachedData.LastModified
 }
 
-// GetLastModified returns content of cahced content
+// GetContent returns content of cahced content
 func (e *CachedContentOperator) GetContent() []byte {
 	return e.chachedData.Content
 }
