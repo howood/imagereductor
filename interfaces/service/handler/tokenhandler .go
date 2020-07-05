@@ -13,7 +13,7 @@ import (
 
 // TokenHandler struct
 type TokenHandler struct {
-	ctx context.Context
+	BaseHandler
 }
 
 // Request is get from storage

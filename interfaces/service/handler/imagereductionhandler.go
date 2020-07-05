@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/application/actor/cacheservice"
@@ -22,7 +21,7 @@ import (
 
 // ImageReductionHandler struct
 type ImageReductionHandler struct {
-	ctx context.Context
+	BaseHandler
 }
 
 // Request is get from storage
@@ -38,13 +37,13 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		return nil
 	}
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
-	contenttype, imagebyte, err := cloudstorageassessor.Get(c.FormValue("key"))
+	contenttype, imagebyte, err := cloudstorageassessor.Get(c.FormValue(FormKeyStorageKey))
 	if err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
-	width, _ := strconv.Atoi(c.FormValue("w"))
-	height, _ := strconv.Atoi(c.FormValue("h"))
-	quality, _ := strconv.Atoi(c.FormValue("q"))
+	width, _ := strconv.Atoi(c.FormValue(FormKeyWidth))
+	height, _ := strconv.Atoi(c.FormValue(FormKeyHeight))
+	quality, _ := strconv.Atoi(c.FormValue(FormKeyQuality))
 	if width > 0 || height > 0 {
 		imageOperator := actor.NewImageOperator(
 			irh.ctx,
@@ -63,6 +62,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		}
 	}
 	irh.setCache(contenttype, imagebyte, requesturi)
+	irh.setResponseHeader(c, irh.setNewLatsModified(), fmt.Sprintf("%d", len(string(imagebyte))), irh.ctx.Value(echo.HeaderXRequestID).(string))
 	return c.Blob(http.StatusOK, contenttype, imagebyte)
 }
 
@@ -73,7 +73,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	log.Info(irh.ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
-	file, err := c.FormFile("uploadfile")
+	file, err := c.FormFile(FormKeyUploadFile)
 	if err != nil {
 		log.Error(irh.ctx, err)
 		return irh.errorResponse(c, http.StatusBadRequest, err)
@@ -92,14 +92,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
-	return cloudstorageassessor.Put(c.FormValue("path"), reader.(io.ReadSeeker))
-}
-
-func (irh ImageReductionHandler) errorResponse(c echo.Context, statudcode int, err error) error {
-	if strings.Contains(strings.ToLower(err.Error()), storageservice.RecordNotFoundMsg) {
-		statudcode = http.StatusNotFound
-	}
-	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, "    ")
+	return cloudstorageassessor.Put(c.FormValue(FormKeyPath), reader.(io.ReadSeeker))
 }
 
 func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) bool {
@@ -125,9 +118,8 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 			return false
 		}
 
+		irh.setResponseHeader(c, cachedcontent.GetLastModified(), fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))), irh.ctx.Value(echo.HeaderXRequestID).(string))
 		c.Response().Header().Set(echo.HeaderContentType, cachedcontent.GetContentType())
-		c.Response().Header().Set(echo.HeaderLastModified, cachedcontent.GetLastModified())
-		c.Response().Header().Set(echo.HeaderContentLength, fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))))
 		c.Response().WriteHeader(http.StatusOK)
 		_, err := c.Response().Write(cachedcontent.GetContent())
 		if err != nil {
@@ -141,7 +133,7 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 
 func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requesturi string) {
 	cachedresponse := actor.NewCachedContentOperator()
-	cachedresponse.Set(mimetype, time.Now().UTC().Format(http.TimeFormat), data)
+	cachedresponse.Set(mimetype, irh.setNewLatsModified(), data)
 	encodedcached, err := cachedresponse.GobEncode()
 	if err != nil {
 		log.Error(irh.ctx, err)
