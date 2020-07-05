@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+// DefaultPort is default port of server
 var DefaultPort = "8080"
 
 func main() {

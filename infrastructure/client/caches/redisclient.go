@@ -3,7 +3,6 @@ package caches
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -131,7 +130,7 @@ func checkConnect(ctx context.Context, connectionkey int) bool {
 
 func checkPing(connectionkey int) error {
 	if _, err := redisConnectionMap[connectionkey].Ping().Result(); err != nil {
-		return errors.New(fmt.Sprintf("did not connect: %v", err))
+		return fmt.Errorf("did not connect: %v", err)
 	}
 	return nil
 }

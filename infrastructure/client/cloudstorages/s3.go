@@ -16,6 +16,7 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
+// S3BucketUploadfiles is bucket to upload
 var S3BucketUploadfiles = os.Getenv("AWS_S3_BUKET")
 
 // S3Instance struct

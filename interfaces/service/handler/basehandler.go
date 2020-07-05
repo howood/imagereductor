@@ -19,6 +19,8 @@ const (
 	FormKeyHeight = "h"
 	// FormKeyQuality is form key of quality
 	FormKeyQuality = "q"
+	// FormKeyNonUseCache is form key of nonusecache
+	FormKeyNonUseCache = "nonusecache"
 	// FormKeyUploadFile is form key of uploadfile
 	FormKeyUploadFile = "uploadfile"
 	// FormKeyPath is form key of path
