@@ -45,7 +45,8 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	width, _ := strconv.Atoi(c.FormValue(FormKeyWidth))
 	height, _ := strconv.Atoi(c.FormValue(FormKeyHeight))
 	quality, _ := strconv.Atoi(c.FormValue(FormKeyQuality))
-	if width > 0 || height > 0 {
+	rotate := c.FormValue(FormKeyRotate)
+	if width > 0 || height > 0 || rotate != "" {
 		imageOperator := actor.NewImageOperator(
 			irh.ctx,
 			contenttype,
@@ -53,11 +54,16 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 				Width:   width,
 				Height:  height,
 				Quality: quality,
+				Rotate:  rotate,
 			},
 		)
-		imageOperator.Decode(bytes.NewBuffer(imagebyte))
-		imageOperator.Resize()
 		var err error
+		if err = imageOperator.Decode(bytes.NewBuffer(imagebyte)); err != nil {
+			return irh.errorResponse(c, http.StatusBadRequest, err)
+		}
+		if err = imageOperator.Process(); err != nil {
+			return irh.errorResponse(c, http.StatusBadRequest, err)
+		}
 		if imagebyte, err = imageOperator.ImageByte(); err != nil {
 			return irh.errorResponse(c, http.StatusBadRequest, err)
 		}

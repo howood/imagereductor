@@ -10,11 +10,22 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"math"
 
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/domain/repository"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"golang.org/x/image/draw"
+	"golang.org/x/image/math/f64"
+)
+
+const (
+	// ImageRotateRight is rotate image 90 degree right
+	ImageRotateRight = "right"
+	// ImageRotateLeft is rotate image 90 degree left
+	ImageRotateLeft = "left"
+	// ImageRotateUpsidedown is rotate image upside down
+	ImageRotateUpsidedown = "upsidedown"
 )
 
 // ImageOperator struct
@@ -50,22 +61,40 @@ func (im *ImageOperator) Decode(src io.Reader) error {
 	return err
 }
 
-// Resize images
-func (im *ImageOperator) Resize() {
+// Process images process resize and more
+func (im *ImageOperator) Process() error {
 	im.calcResizeXY()
-	rect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
-	switch im.option.Quality {
-	case 1:
-		im.object.Dst = im.scale(im.object.Source, rect, draw.NearestNeighbor)
-	case 2:
-		im.object.Dst = im.scale(im.object.Source, rect, draw.ApproxBiLinear)
-	case 3:
-		im.object.Dst = im.scale(im.object.Source, rect, draw.BiLinear)
-	case 4:
-		im.object.Dst = im.scale(im.object.Source, rect, draw.CatmullRom)
+	switch {
+	case (im.option.Rotate != ""):
+		return im.rotateAndResize()
 	default:
-		im.object.Dst = im.scale(im.object.Source, rect, draw.CatmullRom)
+		return im.resize()
 	}
+}
+
+// resize images
+func (im *ImageOperator) resize() error {
+	rect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
+	im.object.Dst = im.scale(im.object.Source, rect, im.getDrawer())
+	return nil
+}
+
+// rotateAndResize images
+func (im *ImageOperator) rotateAndResize() error {
+	switch im.option.Rotate {
+	case ImageRotateRight:
+		rect := image.Rect(0, 0, im.object.DstY, im.object.DstX)
+		im.object.Dst = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, float64(im.object.DstY), 0), im.getDrawer())
+	case ImageRotateLeft:
+		rect := image.Rect(0, 0, im.object.DstY, im.object.DstX)
+		im.object.Dst = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.DstX)), im.getDrawer())
+	case ImageRotateUpsidedown:
+		rect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
+		im.object.Dst = im.transform(im.object.Source, rect, im.calcRotateAffine(180.0, float64(im.object.DstX), float64(im.object.DstY)), im.getDrawer())
+	default:
+		return fmt.Errorf("Invalid Rotate Parameter")
+	}
+	return nil
 }
 
 // ImageByte get image bytes
@@ -92,6 +121,27 @@ func (im *ImageOperator) scale(src image.Image, rect image.Rectangle, scaler dra
 	dst := image.NewRGBA(rect)
 	scaler.Scale(dst, rect, src, src.Bounds(), draw.Over, nil)
 	return dst
+}
+
+func (im *ImageOperator) transform(src image.Image, rect image.Rectangle, t f64.Aff3, scaler draw.Transformer) image.Image {
+	dst := image.NewRGBA(rect)
+	scaler.Transform(dst, t, src, src.Bounds(), draw.Over, nil)
+	return dst
+}
+
+func (im *ImageOperator) getDrawer() draw.Interpolator {
+	switch im.option.Quality {
+	case 1:
+		return draw.NearestNeighbor
+	case 2:
+		return draw.ApproxBiLinear
+	case 3:
+		return draw.BiLinear
+	case 4:
+		return draw.CatmullRom
+	default:
+		return draw.CatmullRom
+	}
 }
 
 func (im *ImageOperator) calcResizeXY() {
@@ -124,4 +174,14 @@ func (im *ImageOperator) calcResizeFitOptionHeight() {
 		im.object.DstX = int(float64(im.option.Height) * (float64(im.object.OriginX) / float64(im.object.OriginY)))
 	}
 	im.object.DstY = im.option.Height
+}
+
+func (im *ImageOperator) calcRotateAffine(deg, moveleft, movedown float64) f64.Aff3 {
+	log.Debug(im.ctx, fmt.Sprintf("deg: %v, moveleft: %v, movedown: %v", deg, moveleft, movedown))
+	rad := deg * math.Pi / 180
+	cos, sin := math.Cos(rad), math.Sin(rad)
+	return f64.Aff3{
+		+cos, -sin, moveleft,
+		+sin, +cos, movedown,
+	}
 }

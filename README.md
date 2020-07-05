@@ -12,6 +12,20 @@
 
 Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 
+## URL Query Key to Resize
+
+* key : path of storage
+* w : 500 (px)
+* h : 500 (px)
+* q : 1~4
+* rotate : right,left,upsidedown
+* nonusecache: true
+
+## Form Key to Upload(multipart/form-data)
+
+* path : path of storage
+* uploadfile : filepath
+
 ## using docker
 
 | env        | param          |
