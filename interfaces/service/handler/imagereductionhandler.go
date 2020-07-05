@@ -57,14 +57,14 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 				Rotate:  rotate,
 			},
 		)
-		var err error
-		if err = imageOperator.Decode(bytes.NewBuffer(imagebyte)); err != nil {
-			return irh.errorResponse(c, http.StatusBadRequest, err)
+		err := imageOperator.Decode(bytes.NewBuffer(imagebyte))
+		if err == nil {
+			err = imageOperator.Process()
 		}
-		if err = imageOperator.Process(); err != nil {
-			return irh.errorResponse(c, http.StatusBadRequest, err)
+		if err == nil {
+			imagebyte, err = imageOperator.ImageByte()
 		}
-		if imagebyte, err = imageOperator.ImageByte(); err != nil {
+		if err != nil {
 			return irh.errorResponse(c, http.StatusBadRequest, err)
 		}
 	}
