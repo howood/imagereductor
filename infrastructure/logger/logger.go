@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -17,8 +18,11 @@ const (
 	LogModeMedium = "minimum"
 )
 
+const ContextKeyRequestID = "X-Request-ID"
+
 var log *logrus.Entry
 
+type LogEntry logrus.Entry
 type PlainFormatter struct {
 	TimestampFormat string
 	LevelDesc       []string
@@ -48,27 +52,35 @@ func init() {
 	log = logrus.WithFields(logrus.Fields{})
 }
 
-func Debug(msg ...interface{}) {
+func GetLogger(xReqID string) *logrus.Entry {
+	return logrus.WithField(ContextKeyRequestID, xReqID)
+}
+
+func Debug(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
+	log = logrus.WithField(ContextKeyRequestID, ctx.Value(ContextKeyRequestID))
 	log.Debug("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
-func Info(msg ...interface{}) {
+func Info(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
+	log = logrus.WithField(ContextKeyRequestID, ctx.Value(ContextKeyRequestID))
 	log.Info("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
-func Warn(msg ...interface{}) {
+func Warn(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
+	log = logrus.WithField(ContextKeyRequestID, ctx.Value(ContextKeyRequestID))
 	log.Warn("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
-func Error(msg ...interface{}) {
+func Error(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
+	log = logrus.WithField(ContextKeyRequestID, ctx.Value(ContextKeyRequestID))
 	log.Error("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
 func (f *PlainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
-	return []byte(fmt.Sprintf("[%s] [%s] [%s] %s \n", timestamp, f.LevelDesc[entry.Level], PackegeName, entry.Message)), nil
+	return []byte(fmt.Sprintf("[%s] [%s] [%s] [%s] %s \n", timestamp, f.LevelDesc[entry.Level], PackegeName, entry.Data[ContextKeyRequestID], entry.Message)), nil
 }

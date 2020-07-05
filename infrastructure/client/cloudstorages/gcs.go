@@ -21,10 +21,9 @@ type GCSInstance struct {
 }
 
 // インスタンス作成用のメソッド
-func NewGCS() *GCSInstance {
-	log.Debug("", "----GCS DNS----")
+func NewGCS(ctx context.Context) *GCSInstance {
+	log.Debug(ctx, "----GCS DNS----")
 	var I *GCSInstance
-	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil
@@ -40,8 +39,8 @@ func NewGCS() *GCSInstance {
 func (gcsinstance GCSInstance) init() {
 	if _, exitstserr := gcsinstance.client.Bucket(GCS_BUCKET_UPLOADFILES).Attrs(gcsinstance.ctx); exitstserr != nil {
 		if err := gcsinstance.client.Bucket(GCS_BUCKET_UPLOADFILES).Create(gcsinstance.ctx, GCS_PROJECTID, nil); err != nil {
-			log.Debug("", "***CreateError****")
-			log.Debug("", err)
+			log.Debug(gcsinstance.ctx, "***CreateError****")
+			log.Debug(gcsinstance.ctx, err)
 		}
 	}
 }
@@ -68,8 +67,8 @@ func (gcsinstance GCSInstance) Put(bucket string, path string, file io.ReadSeeke
 }
 
 func (gcsinstance GCSInstance) Get(bucket string, key string) (string, []byte, error) {
-	log.Debug("", bucket)
-	log.Debug("", key)
+	log.Debug(gcsinstance.ctx, bucket)
+	log.Debug(gcsinstance.ctx, key)
 
 	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(gcsinstance.ctx)
 	if err != nil {

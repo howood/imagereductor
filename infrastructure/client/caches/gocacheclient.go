@@ -1,6 +1,7 @@
 package caches
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -23,11 +24,12 @@ func init() {
 }
 
 type GoCacheClient struct {
+	ctx context.Context
 }
 
 // インスタンス作成用のメソッド
-func NewGoCacheClient() *GoCacheClient {
-	ret := &GoCacheClient{}
+func NewGoCacheClient(ctx context.Context) *GoCacheClient {
+	ret := &GoCacheClient{ctx: ctx}
 	return ret
 }
 
@@ -61,6 +63,6 @@ func (cc *GoCacheClient) getInstance(key string) *cache.Cache {
 		hash = ((hash << 5) + hash) + uint32(c)
 	}
 	i = int(hash) % NUM_INSTANCE
-	log.Info("", fmt.Sprintf("get_instance: %d", i))
+	log.Info(cc.ctx, fmt.Sprintf("get_instance: %d", i))
 	return gocacheConnectionMap[i]
 }

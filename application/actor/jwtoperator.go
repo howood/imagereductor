@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -16,9 +17,10 @@ var TokenSecret = os.Getenv("TOKEN_SECRET")
 
 type JwtOperator struct {
 	jwtClaims *entity.JwtClaims
+	ctx       context.Context
 }
 
-func NewJwtOperator(username string, admin bool, expired time.Duration) repository.JwtClaimsRepository {
+func NewJwtOperator(ctx context.Context, username string, admin bool, expired time.Duration) repository.JwtClaimsRepository {
 	return &JwtOperator{
 		jwtClaims: &entity.JwtClaims{
 			username,
@@ -27,6 +29,7 @@ func NewJwtOperator(username string, admin bool, expired time.Duration) reposito
 				ExpiresAt: time.Now().Add(time.Minute * expired).Unix(),
 			},
 		},
+		ctx: ctx,
 	}
 }
 
@@ -34,7 +37,7 @@ func (jc *JwtOperator) CreateToken(secret string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jc.jwtClaims)
 	tokenstring, err := token.SignedString([]byte(secret))
 	if err != nil {
-		log.Error("", err.Error())
+		log.Error(jc.ctx, err.Error())
 	}
 	return tokenstring
 }

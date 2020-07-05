@@ -1,6 +1,7 @@
 package caches
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 func Test_RedisClient(t *testing.T) {
 	key := "testkey"
 	data := "testvalue"
-	cached := NewRedis(true, 2)
+	cached := NewRedis(context.Background(), true, 2)
 	defer cached.CloseConnect()
 	if err := cached.Set(key, data, 20*time.Second); err != nil {
 		t.Fatalf("failed test %#v", err)
@@ -36,7 +37,7 @@ func Test_RedisClient(t *testing.T) {
 func Test_RedisClientDelBulk(t *testing.T) {
 	key := "testkey"
 	data := "testvalue"
-	cached := NewRedis(true, 2)
+	cached := NewRedis(context.Background(), true, 2)
 	defer cached.CloseConnect()
 	if err := cached.Set(key, data, 20*time.Second); err != nil {
 		t.Fatalf("failed test %#v", err)

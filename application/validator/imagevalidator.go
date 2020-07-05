@@ -2,6 +2,7 @@ package validator
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -27,14 +28,16 @@ type ImageValidator struct {
 	maxwidth    int
 	maxheight   int
 	maxfilesize int
+	ctx         context.Context
 }
 
-func NewImageValidator(imagetype []string, maxwidth, maxheight, maxfilesize int) *ImageValidator {
+func NewImageValidator(ctx context.Context, imagetype []string, maxwidth, maxheight, maxfilesize int) *ImageValidator {
 	I := &ImageValidator{
 		imagetype:   imagetype,
 		maxwidth:    maxwidth,
 		maxheight:   maxheight,
 		maxfilesize: maxfilesize,
+		ctx:         ctx,
 	}
 	I.convertImageType()
 	return I
@@ -42,8 +45,8 @@ func NewImageValidator(imagetype []string, maxwidth, maxheight, maxfilesize int)
 
 func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 	imageinfo, format, err := image.DecodeConfig(uploadfile)
-	log.Debug(fmt.Sprintf("%#v", imageinfo))
-	log.Debug(format)
+	log.Debug(val.ctx, fmt.Sprintf("%#v", imageinfo))
+	log.Debug(val.ctx, format)
 	if err != nil {
 		return errors.New(err.Error())
 	}
@@ -59,9 +62,9 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 	}
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(uploadfile)
-	log.Debug(val.maxfilesize)
-	log.Debug(float64(val.maxfilesize)/1024/1024, 2)
-	log.Debug(utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2))
+	log.Debug(val.ctx, val.maxfilesize)
+	log.Debug(val.ctx, float64(val.maxfilesize)/1024/1024, 2)
+	log.Debug(val.ctx, utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2))
 	if val.maxfilesize != 0 && buf.Len() > val.maxfilesize {
 		sizeerrormsg = append(sizeerrormsg, fmt.Sprintf("Over Image filesize: %v MB", utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2)))
 	}

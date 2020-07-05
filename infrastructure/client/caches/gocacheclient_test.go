@@ -1,6 +1,7 @@
 package caches
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 func Test_GoCacheClient(t *testing.T) {
 	setkey := "testkey"
 	setdata := "setdata"
-	client := NewGoCacheClient()
+	client := NewGoCacheClient(context.Background())
 	client.Set(setkey, setdata, 60*time.Second)
 	getdata, ok := client.Get(setkey)
 	if !ok {
