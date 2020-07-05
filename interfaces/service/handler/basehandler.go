@@ -21,6 +21,8 @@ const (
 	FormKeyQuality = "q"
 	// FormKeyNonUseCache is form key of nonusecache
 	FormKeyNonUseCache = "nonusecache"
+	// FormKeyRotate is form key of round
+	FormKeyRotate = "rotate"
 	// FormKeyUploadFile is form key of uploadfile
 	FormKeyUploadFile = "uploadfile"
 	// FormKeyPath is form key of path
