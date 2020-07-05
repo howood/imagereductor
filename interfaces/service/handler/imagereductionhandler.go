@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -99,30 +100,24 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 	cacheAssessor := cacheservice.NewCacheAssessor(irh.ctx, cacheservice.GetCachedDB())
 	if cachedvalue, cachedfound := cacheAssessor.Get(requesturi); cachedfound {
 		cachedcontent := actor.NewCachedContentOperator()
+		var err error
 		switch xi := cachedvalue.(type) {
 		case []byte:
-			if err := cachedcontent.GobDecode(xi); err != nil {
-				log.Error(irh.ctx, "GobDecode Error byte")
-				log.Error(irh.ctx, err.Error())
-				return false
-			}
+			err = cachedcontent.GobDecode(xi)
 		case string:
-			if err := cachedcontent.GobDecode([]byte(xi)); err != nil {
-				log.Error(irh.ctx, "GobDecode Error string")
-				log.Error(irh.ctx, err.Error())
-				return false
-			}
-
+			err = cachedcontent.GobDecode([]byte(xi))
 		default:
-			log.Error(irh.ctx, "get cache error")
+			err = errors.New("get cache error")
+		}
+		if err != nil {
+			log.Error(irh.ctx, err.Error())
 			return false
 		}
 
 		irh.setResponseHeader(c, cachedcontent.GetLastModified(), fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))), irh.ctx.Value(echo.HeaderXRequestID).(string))
 		c.Response().Header().Set(echo.HeaderContentType, cachedcontent.GetContentType())
 		c.Response().WriteHeader(http.StatusOK)
-		_, err := c.Response().Write(cachedcontent.GetContent())
-		if err != nil {
+		if _, err = c.Response().Write(cachedcontent.GetContent()); err != nil {
 			log.Error(irh.ctx, err.Error())
 			return false
 		}
