@@ -32,7 +32,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
-	if c.FormValue("nonusecache") != "true" && irh.getCache(c, requesturi) {
+	if c.FormValue(FormKeyNonUseCache) != "true" && irh.getCache(c, requesturi) {
 		log.Info(irh.ctx, "cache hit!")
 		return nil
 	}
