@@ -78,7 +78,7 @@ func GetCachedDB() int {
 	return db
 }
 
-// GetCachedDB get session db
+// GetSessionDB get session db
 func GetSessionDB() int {
 	db, err := strconv.Atoi(os.Getenv("SESSIONDB"))
 	if err != nil {
