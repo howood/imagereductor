@@ -22,8 +22,8 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
 
-	e.GET("/", handler.ImageReductionHandler{}.Request)
 	if os.Getenv("ADMIN_MODE") == "enable" {
 		e.GET("/token", handler.TokenHandler{}.Request)
 	}
@@ -32,7 +32,10 @@ func main() {
 		Claims:     &entity.JwtClaims{},
 		SigningKey: []byte(actor.TokenSecret),
 	}
+	e.GET("/", handler.ImageReductionHandler{}.Request)
 	e.POST("/", handler.ImageReductionHandler{}.Upload, middleware.JWTWithConfig(jwtconfig))
+	e.GET("/files", handler.ImageReductionHandler{}.RequestFile)
+	e.POST("/files", handler.ImageReductionHandler{}.UploadFile, middleware.JWTWithConfig(jwtconfig))
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", DefaultPort)))
 }
