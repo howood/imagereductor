@@ -73,6 +73,28 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	return c.Blob(http.StatusOK, contenttype, imagebyte)
 }
 
+// RequestFile is get non image file from storage
+func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
+	requesturi := c.Request().URL.RequestURI()
+	xRequestID := requestid.GetRequestID(c.Request())
+	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
+	log.Info(irh.ctx, c.Request().Method)
+	log.Info(irh.ctx, c.Request().Header)
+	if c.FormValue(FormKeyNonUseCache) != "true" && irh.getCache(c, requesturi) {
+		log.Info(irh.ctx, "cache hit!")
+		return nil
+	}
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+	contenttype, filebyte, err := cloudstorageassessor.Get(c.FormValue(FormKeyStorageKey))
+	if err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
+	irh.setCache(contenttype, filebyte, requesturi)
+	irh.setResponseHeader(c, irh.setNewLatsModified(), fmt.Sprintf("%d", len(string(filebyte))), irh.ctx.Value(echo.HeaderXRequestID).(string))
+	return c.Blob(http.StatusOK, contenttype, filebyte)
+}
+
 // Upload is to upload to storage
 func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
@@ -102,6 +124,27 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	return cloudstorageassessor.Put(c.FormValue(FormKeyPath), reader.(io.ReadSeeker))
 }
 
+// UploadFile is to upload non image file to storage
+func (irh ImageReductionHandler) UploadFile(c echo.Context) error {
+	xRequestID := requestid.GetRequestID(c.Request())
+	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	log.Info(irh.ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
+	log.Info(irh.ctx, c.Request().Method)
+	log.Info(irh.ctx, c.Request().Header)
+	file, err := c.FormFile(FormKeyUploadFile)
+	if err != nil {
+		log.Error(irh.ctx, err)
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
+	reader, err := file.Open()
+	if err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
+	defer reader.Close()
+
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+	return cloudstorageassessor.Put(c.FormValue(FormKeyPath), reader.(io.ReadSeeker))
+}
 func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) bool {
 	cacheAssessor := cacheservice.NewCacheAssessor(irh.ctx, cacheservice.GetCachedDB())
 	if cachedvalue, cachedfound := cacheAssessor.Get(requesturi); cachedfound {
