@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go/storage v1.10.0
-	github.com/aws/aws-sdk-go v1.33.10
+	github.com/aws/aws-sdk-go v1.33.15
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-redis/redis v6.15.8+incompatible
 	github.com/gofrs/uuid v3.3.0+incompatible

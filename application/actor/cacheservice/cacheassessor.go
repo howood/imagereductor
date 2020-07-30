@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/howood/imagereductor/infrastructure/client/caches"
 	log "github.com/howood/imagereductor/infrastructure/logger"
+	"github.com/howood/imagereductor/library/utils"
 )
 
 // CacheAssessor struct
@@ -62,27 +62,15 @@ func (ca *CacheAssessor) Delete(index string) error {
 
 // GetChacheExpired get cache expired
 func GetChacheExpired() time.Duration {
-	expired, err := strconv.Atoi(os.Getenv("CACHEEXPIED"))
-	if err != nil {
-		panic(err)
-	}
-	return time.Duration(expired)
+	return time.Duration(utils.GetOsEnvInt("CACHEEXPIED", 300))
 }
 
 // GetCachedDB get cache db
 func GetCachedDB() int {
-	db, err := strconv.Atoi(os.Getenv("CACHEDDB"))
-	if err != nil {
-		panic(err)
-	}
-	return db
+	return utils.GetOsEnvInt("CACHEDDB", 0)
 }
 
 // GetSessionDB get session db
 func GetSessionDB() int {
-	db, err := strconv.Atoi(os.Getenv("SESSIONDB"))
-	if err != nil {
-		panic(err)
-	}
-	return db
+	return utils.GetOsEnvInt("SESSIONDB", 1)
 }
