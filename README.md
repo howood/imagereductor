@@ -40,14 +40,14 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 | REDISTLS |use or empty |
 | REDISPASSWORD | |
 | CACHEDDB |0~ |
-| CACHEEXPIED |30 (seconds) |
+| CACHEEXPIED |300 (seconds) |
 | STORAGE_TYPE |s3 / gcs |
 | AWS_S3_LOCALUSE |use or empty (use with minio) |
 | AWS_S3_REGION | |
 | AWS_S3_BUKET | |
 | AWS_S3_ACCESSKEY | |
 | AWS_S3_SECRETKEY | |
-| AWS_S3_ENDPOINT |(use with minio |
+| AWS_S3_ENDPOINT |(use with minio) |
 | GCS_BUKET | |
 | GCS_PROJECTID | |
 | GOOGLE_APPLICATION_CREDENTIALS | |
@@ -55,4 +55,4 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 | VALIDATE_IMAGE_TYPE | jpeg,gif,png,bmp,tiff |
 | VALIDATE_IMAGE_MAXWIDTH |5000 (px) |
 | VALIDATE_IMAGE_MAXHEIGHT |5000 (px) |
-| VALIDATE_IMAGE_MAXFILESIZE |5000000 (byte) |
+| VALIDATE_IMAGE_MAXFILESIZE |104857600 (byte) |

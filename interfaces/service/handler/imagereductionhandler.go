@@ -17,6 +17,7 @@ import (
 	"github.com/howood/imagereductor/application/validator"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
+	"github.com/howood/imagereductor/library/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -113,9 +114,9 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	}
 	defer reader.Close()
 	imagetypearray := strings.Split(os.Getenv("VALIDATE_IMAGE_TYPE"), ",")
-	maxwidth, _ := strconv.Atoi(os.Getenv("VALIDATE_IMAGE_MAXWIDTH"))
-	maxheight, _ := strconv.Atoi(os.Getenv("VALIDATE_IMAGE_MAXHEIGHT"))
-	maxfilesize, _ := strconv.Atoi(os.Getenv("VALIDATE_IMAGE_MAXFILESIZE"))
+	maxwidth := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXWIDTH", 5000)
+	maxheight := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXHEIGHT", 5000)
+	maxfilesize := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXFILESIZE", 104857600)
 	imagevalidate := validator.NewImageValidator(irh.ctx, imagetypearray, maxwidth, maxheight, maxfilesize)
 	if err := imagevalidate.Validate(reader); err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)

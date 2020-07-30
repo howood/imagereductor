@@ -8,17 +8,15 @@ import (
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/infrastructure/custommiddleware"
 	"github.com/howood/imagereductor/interfaces/service/handler"
+	"github.com/howood/imagereductor/library/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 // DefaultPort is default port of server
-var DefaultPort = "8080"
+var DefaultPort = utils.GetOsEnv("SERVER_PORT", "8080")
 
 func main() {
-	if os.Getenv("SERVER_PORT") != "" {
-		DefaultPort = os.Getenv("SERVER_PORT")
-	}
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
