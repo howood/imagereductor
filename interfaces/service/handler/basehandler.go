@@ -2,11 +2,13 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/howood/imagereductor/application/actor/storageservice"
+	"github.com/howood/imagereductor/library/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -42,12 +44,24 @@ func (bh BaseHandler) errorResponse(c echo.Context, statudcode int, err error) e
 	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, "    ")
 }
 
-func (bh BaseHandler) setResponseHeader(c echo.Context, lastmodified, contentlength, xrequestud string) {
+func (bh BaseHandler) setResponseHeader(c echo.Context, lastmodified, contentlength string, expires, xrequestid string) {
 	c.Response().Header().Set(echo.HeaderLastModified, lastmodified)
 	c.Response().Header().Set(echo.HeaderContentLength, contentlength)
-	c.Response().Header().Set(echo.HeaderXRequestID, xrequestud)
+	c.Response().Header().Set(echo.HeaderXRequestID, xrequestid)
+	c.Response().Header().Set("Cache-Control", fmt.Sprintf("max-age:%g, public", (bh.getHeaderExpires()*time.Second).Seconds()))
+	if expires != "" {
+		c.Response().Header().Set("Expires", expires)
+	}
 }
 
 func (bh BaseHandler) setNewLatsModified() string {
 	return time.Now().UTC().Format(http.TimeFormat)
+}
+
+func (bh BaseHandler) setExpires(epires time.Time) string {
+	return epires.Add(bh.getHeaderExpires() * time.Second).UTC().Format(http.TimeFormat)
+}
+
+func (bh BaseHandler) getHeaderExpires() time.Duration {
+	return time.Duration(utils.GetOsEnvInt("HEADEREXPIRED", 300))
 }

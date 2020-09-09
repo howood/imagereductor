@@ -41,6 +41,7 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 | REDISPASSWORD | |
 | CACHEDDB |0~ |
 | CACHEEXPIED |300 (seconds) |
+| HEADEREXPIRED |300 (seconds) |
 | STORAGE_TYPE |s3 / gcs |
 | AWS_S3_LOCALUSE |use or empty (use with minio) |
 | AWS_S3_REGION | |

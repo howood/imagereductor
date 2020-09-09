@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/application/actor/cacheservice"
@@ -70,7 +71,13 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		}
 	}
 	irh.setCache(contenttype, imagebyte, requesturi)
-	irh.setResponseHeader(c, irh.setNewLatsModified(), fmt.Sprintf("%d", len(string(imagebyte))), irh.ctx.Value(echo.HeaderXRequestID).(string))
+	irh.setResponseHeader(
+		c,
+		irh.setNewLatsModified(),
+		fmt.Sprintf("%d", len(string(imagebyte))),
+		irh.setExpires(time.Now()),
+		irh.ctx.Value(echo.HeaderXRequestID).(string),
+	)
 	return c.Blob(http.StatusOK, contenttype, imagebyte)
 }
 
@@ -92,7 +99,13 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	irh.setCache(contenttype, filebyte, requesturi)
-	irh.setResponseHeader(c, irh.setNewLatsModified(), fmt.Sprintf("%d", len(string(filebyte))), irh.ctx.Value(echo.HeaderXRequestID).(string))
+	irh.setResponseHeader(
+		c,
+		irh.setNewLatsModified(),
+		fmt.Sprintf("%d", len(string(filebyte))),
+		"",
+		irh.ctx.Value(echo.HeaderXRequestID).(string),
+	)
 	return c.Blob(http.StatusOK, contenttype, filebyte)
 }
 
@@ -163,8 +176,14 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 			log.Error(irh.ctx, err.Error())
 			return false
 		}
-
-		irh.setResponseHeader(c, cachedcontent.GetLastModified(), fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))), irh.ctx.Value(echo.HeaderXRequestID).(string))
+		lastmodified, _ := time.Parse(http.TimeFormat, cachedcontent.GetLastModified())
+		irh.setResponseHeader(
+			c,
+			cachedcontent.GetLastModified(),
+			fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))),
+			irh.setExpires(lastmodified),
+			irh.ctx.Value(echo.HeaderXRequestID).(string),
+		)
 		c.Response().Header().Set(echo.HeaderContentType, cachedcontent.GetContentType())
 		c.Response().WriteHeader(http.StatusOK)
 		if _, err = c.Response().Write(cachedcontent.GetContent()); err != nil {
