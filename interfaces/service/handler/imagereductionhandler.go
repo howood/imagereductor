@@ -40,8 +40,8 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		log.Info(irh.ctx, "cache hit!")
 		return nil
 	}
-	var crop [4]int
 	var err error
+	var crop [4]int
 	var contenttype string
 	var imagebyte []byte
 	// get parameters
