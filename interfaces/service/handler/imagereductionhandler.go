@@ -40,20 +40,23 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		log.Info(irh.ctx, "cache hit!")
 		return nil
 	}
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
-	contenttype, imagebyte, err := cloudstorageassessor.Get(c.FormValue(FormKeyStorageKey))
-	if err != nil {
-		return irh.errorResponse(c, http.StatusBadRequest, err)
-	}
+	var crop [4]int
+	var err error
+	var contenttype string
+	var imagebyte []byte
+	// get parameters
 	width, _ := strconv.Atoi(c.FormValue(FormKeyWidth))
 	height, _ := strconv.Atoi(c.FormValue(FormKeyHeight))
 	quality, _ := strconv.Atoi(c.FormValue(FormKeyQuality))
 	rotate := c.FormValue(FormKeyRotate)
-	var crop [4]int
-	if crop, err = irh.getCropParam(c.FormValue(FormKeyCrop)); err != nil {
-		return irh.errorResponse(c, http.StatusBadRequest, err)
+	crop, err = irh.getCropParam(c.FormValue(FormKeyCrop))
+	// get from storage
+	if err == nil {
+		cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+		contenttype, imagebyte, err = cloudstorageassessor.Get(c.FormValue(FormKeyStorageKey))
 	}
-	if width > 0 || height > 0 || rotate != "" || (reflect.DeepEqual(crop, [4]int{}) == false) {
+	// resizing image
+	if err == nil && (width > 0 || height > 0 || rotate != "" || (reflect.DeepEqual(crop, [4]int{}) == false)) {
 		imageOperator := actor.NewImageOperator(
 			irh.ctx,
 			contenttype,
@@ -72,9 +75,9 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		if err == nil {
 			imagebyte, err = imageOperator.ImageByte()
 		}
-		if err != nil {
-			return irh.errorResponse(c, http.StatusBadRequest, err)
-		}
+	}
+	if err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	irh.setCache(contenttype, imagebyte, requesturi)
 	irh.setResponseHeader(
