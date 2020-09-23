@@ -25,6 +25,8 @@ const (
 	FormKeyNonUseCache = "nonusecache"
 	// FormKeyRotate is form key of round
 	FormKeyRotate = "rotate"
+	// FormKeyCrop is form key of crop
+	FormKeyCrop = "crop"
 	// FormKeyUploadFile is form key of uploadfile
 	FormKeyUploadFile = "uploadfile"
 	// FormKeyPath is form key of path

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -48,7 +49,13 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	height, _ := strconv.Atoi(c.FormValue(FormKeyHeight))
 	quality, _ := strconv.Atoi(c.FormValue(FormKeyQuality))
 	rotate := c.FormValue(FormKeyRotate)
-	if width > 0 || height > 0 || rotate != "" {
+	var crop [4]int
+	if cropparam := c.FormValue(FormKeyCrop); cropparam != "" {
+		if crop, err = irh.getCropParam(cropparam); err != nil {
+			return irh.errorResponse(c, http.StatusBadRequest, err)
+		}
+	}
+	if width > 0 || height > 0 || rotate != "" || (reflect.DeepEqual(crop, [4]int{}) == false) {
 		imageOperator := actor.NewImageOperator(
 			irh.ctx,
 			contenttype,
@@ -57,15 +64,19 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 				Height:  height,
 				Quality: quality,
 				Rotate:  rotate,
+				Crop:    crop,
 			},
 		)
 		err := imageOperator.Decode(bytes.NewBuffer(imagebyte))
+		log.Debug(irh.ctx, err)
 		if err == nil {
 			err = imageOperator.Process()
 		}
+		log.Debug(irh.ctx, err)
 		if err == nil {
 			imagebyte, err = imageOperator.ImageByte()
 		}
+		log.Debug(irh.ctx, err)
 		if err != nil {
 			return irh.errorResponse(c, http.StatusBadRequest, err)
 		}
@@ -205,4 +216,22 @@ func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requestu
 		cacheAssessor := cacheservice.NewCacheAssessor(irh.ctx, cacheservice.GetCachedDB())
 		cacheAssessor.Set(requesturi, encodedcached, cacheservice.GetChacheExpired())
 	}
+}
+
+func (irh ImageReductionHandler) getCropParam(cropparam string) ([4]int, error) {
+	crops := strings.Split(cropparam, ",")
+	if len(crops) != 4 {
+		return [4]int{}, fmt.Errorf("crop parameters must need four with comma like : 111,222,333,444")
+	}
+	intslicecrops := make([]int, 0)
+	for _, crop := range crops {
+		intcrop, err := strconv.Atoi(crop)
+		if err != nil {
+			return [4]int{}, err
+		}
+		intslicecrops = append(intslicecrops, intcrop)
+	}
+	var intcrops [4]int
+	copy(intcrops[:], intslicecrops[:4])
+	return intcrops, nil
 }

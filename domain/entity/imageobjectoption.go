@@ -6,4 +6,5 @@ type ImageObjectOption struct {
 	Height  int
 	Quality int
 	Rotate  string
+	Crop    [4]int
 }
