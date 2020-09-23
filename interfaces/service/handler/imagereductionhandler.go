@@ -50,10 +50,8 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	quality, _ := strconv.Atoi(c.FormValue(FormKeyQuality))
 	rotate := c.FormValue(FormKeyRotate)
 	var crop [4]int
-	if cropparam := c.FormValue(FormKeyCrop); cropparam != "" {
-		if crop, err = irh.getCropParam(cropparam); err != nil {
-			return irh.errorResponse(c, http.StatusBadRequest, err)
-		}
+	if crop, err = irh.getCropParam(c.FormValue(FormKeyCrop)); err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	if width > 0 || height > 0 || rotate != "" || (reflect.DeepEqual(crop, [4]int{}) == false) {
 		imageOperator := actor.NewImageOperator(
@@ -68,15 +66,12 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 			},
 		)
 		err := imageOperator.Decode(bytes.NewBuffer(imagebyte))
-		log.Debug(irh.ctx, err)
 		if err == nil {
 			err = imageOperator.Process()
 		}
-		log.Debug(irh.ctx, err)
 		if err == nil {
 			imagebyte, err = imageOperator.ImageByte()
 		}
-		log.Debug(irh.ctx, err)
 		if err != nil {
 			return irh.errorResponse(c, http.StatusBadRequest, err)
 		}
@@ -219,6 +214,9 @@ func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requestu
 }
 
 func (irh ImageReductionHandler) getCropParam(cropparam string) ([4]int, error) {
+	if cropparam == "" {
+		return [4]int{}, nil
+	}
 	crops := strings.Split(cropparam, ",")
 	if len(crops) != 4 {
 		return [4]int{}, fmt.Errorf("crop parameters must need four with comma like : 111,222,333,444")
