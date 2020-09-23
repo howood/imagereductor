@@ -11,6 +11,7 @@ import (
 	"image/png"
 	"io"
 	"math"
+	"reflect"
 
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/domain/repository"
@@ -38,6 +39,10 @@ type ImageOperator struct {
 // ImageOperatorOption is Option of ImageOperator struct
 type ImageOperatorOption entity.ImageObjectOption
 
+type subImager interface {
+	SubImage(r image.Rectangle) image.Image
+}
+
 // NewImageOperator creates a new ImageObjectRepository
 func NewImageOperator(ctx context.Context, contenttype string, option ImageOperatorOption) repository.ImageObjectRepository {
 	objectOption := entity.ImageObjectOption(option)
@@ -63,11 +68,15 @@ func (im *ImageOperator) Decode(src io.Reader) error {
 
 // Process images process resize and more
 func (im *ImageOperator) Process() error {
-	im.calcResizeXY()
 	switch {
 	case (im.option.Rotate != ""):
+		im.calcResizeXY()
 		return im.rotateAndResize()
+	case (reflect.DeepEqual(im.option.Crop, [4]int{}) == false):
+		im.calcResizeXYWithCrop()
+		return im.cropAndResize()
 	default:
+		im.calcResizeXY()
 		return im.resize()
 	}
 }
@@ -76,6 +85,18 @@ func (im *ImageOperator) Process() error {
 func (im *ImageOperator) resize() error {
 	rect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
 	im.object.Dst = im.scale(im.object.Source, rect, im.getDrawer())
+	return nil
+}
+
+// crop and resize images
+func (im *ImageOperator) cropAndResize() error {
+	croprect := image.Rect(im.option.Crop[0], im.option.Crop[1], im.option.Crop[2], im.option.Crop[3])
+	cropimg, err := im.subimage(im.object.Source, croprect)
+	if err != nil {
+		return err
+	}
+	scalerect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
+	im.object.Dst = im.scale(cropimg, scalerect, im.getDrawer())
 	return nil
 }
 
@@ -123,6 +144,14 @@ func (im *ImageOperator) scale(src image.Image, rect image.Rectangle, scaler dra
 	return dst
 }
 
+func (im *ImageOperator) subimage(src image.Image, rect image.Rectangle) (image.Image, error) {
+	simg, ok := src.(subImager)
+	if !ok {
+		return nil, fmt.Errorf("Image not support Crop")
+	}
+	return simg.SubImage(rect), nil
+}
+
 func (im *ImageOperator) transform(src image.Image, rect image.Rectangle, t f64.Aff3, scaler draw.Transformer) image.Image {
 	dst := image.NewRGBA(rect)
 	scaler.Transform(dst, t, src, src.Bounds(), draw.Over, nil)
@@ -152,26 +181,45 @@ func (im *ImageOperator) calcResizeXY() {
 		im.object.DstY = im.object.OriginY
 	case (im.option.Width != 0 && im.option.Height == 0),
 		(im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) <= float64(im.option.Height)/float64(im.option.Width)):
-		im.calcResizeFitOptionWidth()
+		im.calcResizeFitOptionWidth(im.object.OriginX, im.object.OriginY)
 	case (im.option.Width == 0 && im.option.Height != 0),
 		(im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) > float64(im.option.Height)/float64(im.option.Width)):
-		im.calcResizeFitOptionHeight()
+		im.calcResizeFitOptionHeight(im.object.OriginX, im.object.OriginY)
 	}
 	log.Debug(im.ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
 }
 
-func (im *ImageOperator) calcResizeFitOptionWidth() {
+func (im *ImageOperator) calcResizeXYWithCrop() {
+	log.Debug(im.ctx, fmt.Sprintf("OptionX: %d / OptionY: %d", im.option.Width, im.option.Height))
+	log.Debug(im.ctx, fmt.Sprintf("Crop: %v", im.option.Crop))
+	cropedX := int(math.Abs(float64(im.option.Crop[2] - im.option.Crop[0])))
+	cropedY := int(math.Abs(float64(im.option.Crop[3] - im.option.Crop[1])))
+	switch {
+	case (im.option.Width == 0 && im.option.Height == 0):
+		im.object.DstX = cropedX
+		im.object.DstY = cropedY
+	case (im.option.Width != 0 && im.option.Height == 0),
+		(im.option.Width != 0 && im.option.Height != 0 && float64(cropedY)/float64(cropedX) <= float64(im.option.Height)/float64(im.option.Width)):
+		im.calcResizeFitOptionWidth(cropedX, cropedY)
+	case (im.option.Width == 0 && im.option.Height != 0),
+		(im.option.Width != 0 && im.option.Height != 0 && float64(cropedY)/float64(cropedX) > float64(im.option.Height)/float64(im.option.Width)):
+		im.calcResizeFitOptionHeight(cropedX, cropedY)
+	}
+	log.Debug(im.ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
+}
+
+func (im *ImageOperator) calcResizeFitOptionWidth(originx, originy int) {
 	im.object.DstX = im.option.Width
-	im.object.DstY = im.object.OriginY
-	if im.object.OriginX != 0 {
-		im.object.DstY = int(float64(im.option.Width) * (float64(im.object.OriginY) / float64(im.object.OriginX)))
+	im.object.DstY = originy
+	if originx != 0 {
+		im.object.DstY = int(float64(im.option.Width) * (float64(originy) / float64(originx)))
 	}
 }
 
-func (im *ImageOperator) calcResizeFitOptionHeight() {
-	im.object.DstX = im.object.OriginX
-	if im.object.OriginY != 0 {
-		im.object.DstX = int(float64(im.option.Height) * (float64(im.object.OriginX) / float64(im.object.OriginY)))
+func (im *ImageOperator) calcResizeFitOptionHeight(originx, originy int) {
+	im.object.DstX = originx
+	if originy != 0 {
+		im.object.DstX = int(float64(im.option.Height) * (float64(originx) / float64(originy)))
 	}
 	im.object.DstY = im.option.Height
 }

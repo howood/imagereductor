@@ -19,6 +19,7 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 * h : 500 (px)
 * q : 1~4
 * rotate : right,left,upsidedown
+* crop : 111,222,333,444 (from point x/y - to point x/y)
 * nonusecache: true
 
 ## Form Key to Upload(multipart/form-data)
