@@ -122,6 +122,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		log.Error(irh.ctx, err)
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
+	// read uploaded image
 	var file *multipart.FileHeader
 	var reader multipart.File
 	if err == nil {
@@ -134,13 +135,9 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	defer reader.Close()
-	imagetypearray := strings.Split(os.Getenv("VALIDATE_IMAGE_TYPE"), ",")
-	maxwidth := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXWIDTH", 5000)
-	maxheight := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXHEIGHT", 5000)
-	maxfilesize := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXFILESIZE", 104857600)
-	imagevalidate := validator.NewImageValidator(irh.ctx, imagetypearray, maxwidth, maxheight, maxfilesize)
+	//validate
 	if err == nil {
-		err = imagevalidate.Validate(reader)
+		err = irh.validateUploadedImage(reader)
 	}
 	// resizing image
 	var convertedimagebyte []byte
@@ -163,13 +160,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	if err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
-
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
-	if convertedimagebyte != nil {
-		return cloudstorageassessor.Put(c.FormValue(FormKeyPath), bytes.NewReader(convertedimagebyte))
-	}
-	reader.Seek(0, os.SEEK_SET)
-	return cloudstorageassessor.Put(c.FormValue(FormKeyPath), reader.(io.ReadSeeker))
+	return irh.uploadToStorage(c, reader, convertedimagebyte)
 }
 
 // UploadFile is to upload non image file to storage
@@ -189,10 +180,27 @@ func (irh ImageReductionHandler) UploadFile(c echo.Context) error {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	defer reader.Close()
+	return irh.uploadToStorage(c, reader, nil)
+}
 
+func (irh ImageReductionHandler) validateUploadedImage(reader multipart.File) error {
+	imagetypearray := strings.Split(os.Getenv("VALIDATE_IMAGE_TYPE"), ",")
+	maxwidth := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXWIDTH", 5000)
+	maxheight := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXHEIGHT", 5000)
+	maxfilesize := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXFILESIZE", 104857600)
+	imagevalidate := validator.NewImageValidator(irh.ctx, imagetypearray, maxwidth, maxheight, maxfilesize)
+	return imagevalidate.Validate(reader)
+}
+
+func (irh ImageReductionHandler) uploadToStorage(c echo.Context, reader multipart.File, imagebyte []byte) error {
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+	if imagebyte != nil {
+		return cloudstorageassessor.Put(c.FormValue(FormKeyPath), bytes.NewReader(imagebyte))
+	}
+	reader.Seek(0, os.SEEK_SET)
 	return cloudstorageassessor.Put(c.FormValue(FormKeyPath), reader.(io.ReadSeeker))
 }
+
 func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) bool {
 	cacheAssessor := cacheservice.NewCacheAssessor(irh.ctx, cacheservice.GetCachedDB())
 	if cachedvalue, cachedfound := cacheAssessor.Get(requesturi); cachedfound {
