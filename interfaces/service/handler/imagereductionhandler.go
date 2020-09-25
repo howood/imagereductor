@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"reflect"
@@ -41,34 +42,23 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		return nil
 	}
 	var err error
-	var crop [4]int
 	var contenttype string
 	var imagebyte []byte
-	// get parameters
-	width, _ := strconv.Atoi(c.FormValue(FormKeyWidth))
-	height, _ := strconv.Atoi(c.FormValue(FormKeyHeight))
-	quality, _ := strconv.Atoi(c.FormValue(FormKeyQuality))
-	rotate := c.FormValue(FormKeyRotate)
-	crop, err = irh.getCropParam(c.FormValue(FormKeyCrop))
+	// get imageoption
+	imageoption, err := irh.getImageOptionByFormValue(c)
 	// get from storage
 	if err == nil {
 		cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
 		contenttype, imagebyte, err = cloudstorageassessor.Get(c.FormValue(FormKeyStorageKey))
 	}
 	// resizing image
-	if err == nil && (width > 0 || height > 0 || rotate != "" || (reflect.DeepEqual(crop, [4]int{}) == false)) {
+	if err == nil && reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) == false {
 		imageOperator := actor.NewImageOperator(
 			irh.ctx,
 			contenttype,
-			actor.ImageOperatorOption{
-				Width:   width,
-				Height:  height,
-				Quality: quality,
-				Rotate:  rotate,
-				Crop:    crop,
-			},
+			imageoption,
 		)
-		err := imageOperator.Decode(bytes.NewBuffer(imagebyte))
+		err = imageOperator.Decode(bytes.NewBuffer(imagebyte))
 		if err == nil {
 			err = imageOperator.Process()
 		}
@@ -125,12 +115,21 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	log.Info(irh.ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
-	file, err := c.FormFile(FormKeyUploadFile)
+	var err error
+	// get imageoption
+	imageoption, err := irh.getImageOptionByFormValue(c)
 	if err != nil {
 		log.Error(irh.ctx, err)
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
-	reader, err := file.Open()
+	var file *multipart.FileHeader
+	var reader multipart.File
+	if err == nil {
+		file, err = c.FormFile(FormKeyUploadFile)
+	}
+	if err == nil {
+		reader, err = file.Open()
+	}
 	if err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
@@ -140,10 +139,36 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	maxheight := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXHEIGHT", 5000)
 	maxfilesize := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXFILESIZE", 104857600)
 	imagevalidate := validator.NewImageValidator(irh.ctx, imagetypearray, maxwidth, maxheight, maxfilesize)
-	if err := imagevalidate.Validate(reader); err != nil {
+	if err == nil {
+		err = imagevalidate.Validate(reader)
+	}
+	// resizing image
+	var convertedimagebyte []byte
+	if err == nil && reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) == false {
+		contenttype := utils.GetContentTypeByReadSeeker(reader.(io.ReadSeeker))
+		imageOperator := actor.NewImageOperator(
+			irh.ctx,
+			contenttype,
+			imageoption,
+		)
+		reader.Seek(0, os.SEEK_SET)
+		err = imageOperator.Decode(reader)
+		if err == nil {
+			err = imageOperator.Process()
+		}
+		if err == nil {
+			convertedimagebyte, err = imageOperator.ImageByte()
+		}
+	}
+	if err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
+
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+	if convertedimagebyte != nil {
+		return cloudstorageassessor.Put(c.FormValue(FormKeyPath), bytes.NewReader(convertedimagebyte))
+	}
+	reader.Seek(0, os.SEEK_SET)
 	return cloudstorageassessor.Put(c.FormValue(FormKeyPath), reader.(io.ReadSeeker))
 }
 
@@ -214,6 +239,27 @@ func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requestu
 		cacheAssessor := cacheservice.NewCacheAssessor(irh.ctx, cacheservice.GetCachedDB())
 		cacheAssessor.Set(requesturi, encodedcached, cacheservice.GetChacheExpired())
 	}
+}
+
+func (irh ImageReductionHandler) getImageOptionByFormValue(c echo.Context) (actor.ImageOperatorOption, error) {
+	var err error
+	option := actor.ImageOperatorOption{}
+	if c.FormValue(FormKeyWidth) != "" {
+		option.Width, err = strconv.Atoi(c.FormValue(FormKeyWidth))
+	}
+	if err == nil && c.FormValue(FormKeyHeight) != "" {
+		option.Height, err = strconv.Atoi(c.FormValue(FormKeyHeight))
+	}
+	if err == nil && c.FormValue(FormKeyQuality) != "" {
+		option.Quality, err = strconv.Atoi(c.FormValue(FormKeyQuality))
+	}
+	if err == nil && c.FormValue(FormKeyRotate) != "" {
+		option.Rotate = c.FormValue(FormKeyRotate)
+	}
+	if err == nil && c.FormValue(FormKeyCrop) != "" {
+		option.Crop, err = irh.getCropParam(c.FormValue(FormKeyCrop))
+	}
+	return option, err
 }
 
 func (irh ImageReductionHandler) getCropParam(cropparam string) ([4]int, error) {

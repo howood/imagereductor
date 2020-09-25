@@ -59,10 +59,12 @@ func NewImageOperator(ctx context.Context, contenttype string, option ImageOpera
 func (im *ImageOperator) Decode(src io.Reader) error {
 	var err error
 	im.object.Source, im.object.ImageName, err = image.Decode(src)
-	rectang := im.object.Source.Bounds()
-	im.object.OriginX = rectang.Bounds().Dx()
-	im.object.OriginY = rectang.Bounds().Dy()
-	log.Debug(im.ctx, fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
+	if err == nil {
+		rectang := im.object.Source.Bounds()
+		im.object.OriginX = rectang.Bounds().Dx()
+		im.object.OriginY = rectang.Bounds().Dy()
+		log.Debug(im.ctx, fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
+	}
 	return err
 }
 
