@@ -23,7 +23,7 @@ func main() {
 	e.Use(middleware.CORS())
 
 	if os.Getenv("ADMIN_MODE") == "enable" {
-		e.GET("/token", handler.TokenHandler{}.Request)
+		e.GET("/token", handler.TokenHandler{}.Request, custommiddleware.IPRestriction())
 	}
 	jwtconfig := middleware.JWTConfig{
 		Skipper:    custommiddleware.OptionsMethodSkipper,
