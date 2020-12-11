@@ -70,7 +70,7 @@ func NewS3(ctx context.Context) *S3Instance {
 	return I
 }
 
-func (s3instance S3Instance) init() {
+func (s3instance *S3Instance) init() {
 	if _, bucketerr := s3instance.client.HeadBucket(&s3.HeadBucketInput{Bucket: aws.String(S3BucketUploadfiles)}); bucketerr != nil {
 		if result, err := s3instance.client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(S3BucketUploadfiles)}); err != nil {
 			log.Debug(s3instance.ctx, "***CreateError****")
@@ -81,7 +81,7 @@ func (s3instance S3Instance) init() {
 }
 
 // Put puts to storage
-func (s3instance S3Instance) Put(bucket string, path string, file io.ReadSeeker) error {
+func (s3instance *S3Instance) Put(bucket string, path string, file io.ReadSeeker) error {
 	//ファイルのオフセットを先頭に戻す
 	file.Seek(0, os.SEEK_SET)
 	mimetype, errfile := s3instance.getContentType(file)
@@ -100,7 +100,7 @@ func (s3instance S3Instance) Put(bucket string, path string, file io.ReadSeeker)
 }
 
 // Get gets from storage
-func (s3instance S3Instance) Get(bucket string, key string) (string, []byte, error) {
+func (s3instance *S3Instance) Get(bucket string, key string) (string, []byte, error) {
 	log.Debug(s3instance.ctx, bucket)
 	log.Debug(s3instance.ctx, key)
 	response, err := s3instance.client.GetObject(&s3.GetObjectInput{
@@ -123,7 +123,7 @@ func (s3instance S3Instance) Get(bucket string, key string) (string, []byte, err
 }
 
 // Delete deletes from storage
-func (s3instance S3Instance) Delete(bucket string, key string) error {
+func (s3instance *S3Instance) Delete(bucket string, key string) error {
 	result, err := s3instance.client.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -132,7 +132,7 @@ func (s3instance S3Instance) Delete(bucket string, key string) error {
 	return err
 }
 
-func (s3instance S3Instance) getContentType(out io.ReadSeeker) (string, error) {
+func (s3instance *S3Instance) getContentType(out io.ReadSeeker) (string, error) {
 	buffer := make([]byte, 512)
 	_, err := out.Read(buffer)
 	if err != nil {

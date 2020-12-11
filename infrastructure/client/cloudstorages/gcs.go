@@ -40,7 +40,7 @@ func NewGCS(ctx context.Context) *GCSInstance {
 	return I
 }
 
-func (gcsinstance GCSInstance) init() {
+func (gcsinstance *GCSInstance) init() {
 	if _, exitstserr := gcsinstance.client.Bucket(GcsBucketUploadfiles).Attrs(gcsinstance.ctx); exitstserr != nil {
 		if err := gcsinstance.client.Bucket(GcsBucketUploadfiles).Create(gcsinstance.ctx, GcsProjectID, nil); err != nil {
 			log.Debug(gcsinstance.ctx, "***CreateError****")
@@ -50,7 +50,7 @@ func (gcsinstance GCSInstance) init() {
 }
 
 // Put puts to storage
-func (gcsinstance GCSInstance) Put(bucket string, path string, file io.ReadSeeker) error {
+func (gcsinstance *GCSInstance) Put(bucket string, path string, file io.ReadSeeker) error {
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (gcsinstance GCSInstance) Put(bucket string, path string, file io.ReadSeeke
 }
 
 // Get gets from storage
-func (gcsinstance GCSInstance) Get(bucket string, key string) (string, []byte, error) {
+func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, error) {
 	log.Debug(gcsinstance.ctx, bucket)
 	log.Debug(gcsinstance.ctx, key)
 
@@ -93,7 +93,7 @@ func (gcsinstance GCSInstance) Get(bucket string, key string) (string, []byte, e
 }
 
 // Delete deletes from storage
-func (gcsinstance GCSInstance) Delete(bucket string, key string) error {
+func (gcsinstance *GCSInstance) Delete(bucket string, key string) error {
 	err := gcsinstance.client.Bucket(bucket).Object(key).Delete(gcsinstance.ctx)
 	return err
 }

@@ -68,7 +68,7 @@ func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *Redi
 }
 
 // Set puts to cache
-func (i RedisInstance) Set(key string, value interface{}, expired time.Duration) error {
+func (i *RedisInstance) Set(key string, value interface{}, expired time.Duration) error {
 	log.Debug(i.ctx, "-----SET----")
 	log.Debug(i.ctx, key)
 	log.Debug(i.ctx, expired)
@@ -76,7 +76,7 @@ func (i RedisInstance) Set(key string, value interface{}, expired time.Duration)
 }
 
 // Get gets from cache
-func (i RedisInstance) Get(key string) (interface{}, bool) {
+func (i *RedisInstance) Get(key string) (interface{}, bool) {
 	cachedvalue, err := i.client.Get(key).Result()
 	log.Debug(i.ctx, "-----GET----")
 	log.Debug(i.ctx, key)
@@ -90,14 +90,14 @@ func (i RedisInstance) Get(key string) (interface{}, bool) {
 }
 
 // Del deletes from cache
-func (i RedisInstance) Del(key string) error {
+func (i *RedisInstance) Del(key string) error {
 	log.Debug(i.ctx, "-----DEL----")
 	log.Debug(i.ctx, key)
 	return i.client.Del(key).Err()
 }
 
 // DelBulk bulk deletes from cache
-func (i RedisInstance) DelBulk(key string) error {
+func (i *RedisInstance) DelBulk(key string) error {
 	log.Debug(i.ctx, "-----DelBulk----")
 	log.Debug(i.ctx, key)
 	targetkeys := i.client.Keys(key)
@@ -111,7 +111,7 @@ func (i RedisInstance) DelBulk(key string) error {
 }
 
 // CloseConnect close connection
-func (i RedisInstance) CloseConnect() error {
+func (i *RedisInstance) CloseConnect() error {
 	if i.ConnectionPersistent == false {
 		err := i.client.Close()
 		delete(redisConnectionMap, i.connectionkey)
