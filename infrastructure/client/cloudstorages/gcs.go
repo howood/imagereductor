@@ -1,8 +1,11 @@
 package cloudstorages
 
 import (
+	"fmt"
+
 	"cloud.google.com/go/storage"
 	"golang.org/x/net/context"
+	"google.golang.org/api/iterator"
 
 	"io"
 	"io/ioutil"
@@ -90,6 +93,25 @@ func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, 
 	}
 
 	return contenttype, response, nil
+}
+
+// List get list from storage
+func (gcsinstance *GCSInstance) List(bucket string, key string) ([]string, error) {
+	log.Debug(gcsinstance.ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))
+	query := &storage.Query{Prefix: key}
+	var names []string
+	it := gcsinstance.client.Bucket(bucket).Objects(gcsinstance.ctx, query)
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return names, err
+		}
+		names = append(names, attrs.Name)
+	}
+	return names, nil
 }
 
 // Delete deletes from storage

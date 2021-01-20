@@ -1,6 +1,8 @@
 package cloudstorages
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -120,6 +122,32 @@ func (s3instance *S3Instance) Get(bucket string, key string) (string, []byte, er
 	}
 	log.Debug(s3instance.ctx, contenttype)
 	return contenttype, buf.Bytes(), nil
+}
+
+// List get list from storage
+func (s3instance *S3Instance) List(bucket string, key string) ([]string, error) {
+	log.Debug(s3instance.ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))
+	if key[0:1] == "/" {
+		key = key[1:]
+	}
+	var names []string
+	listgetFn := func(page *s3.ListObjectsV2Output, lastPage bool) bool {
+		for _, obj := range page.Contents {
+			if obj.Key == nil {
+				continue
+			}
+			names = append(names, *obj.Key)
+		}
+		return false
+	}
+	err := s3instance.client.ListObjectsV2Pages(&s3.ListObjectsV2Input{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(key),
+	}, listgetFn)
+	if err != nil {
+		return names, err
+	}
+	return names, nil
 }
 
 // Delete deletes from storage
