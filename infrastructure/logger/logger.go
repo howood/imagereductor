@@ -79,6 +79,20 @@ func Error(ctx context.Context, msg ...interface{}) {
 	log.Error("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
+// Panic log output with Panic
+func Panic(ctx context.Context, msg ...interface{}) {
+	_, filename, line, _ := runtime.Caller(1)
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log.Panic("["+filename+":"+strconv.Itoa(line)+"] ", msg)
+}
+
+// Fatal log output with Fatal
+func Fatal(ctx context.Context, msg ...interface{}) {
+	_, filename, line, _ := runtime.Caller(1)
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log.Fatal("["+filename+":"+strconv.Itoa(line)+"] ", msg)
+}
+
 // Format is formatted log output
 func (f *PlainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
