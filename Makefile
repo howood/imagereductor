@@ -1,4 +1,7 @@
-.PHONY: install,run,test,testv
+.PHONY: update, install,run,test,testv
+
+update:
+	go mod tidy
 
 install:
 	cd /go/src/github.com/howood/imagereductor/imagereductor && export GO111MODULE=on && go install
