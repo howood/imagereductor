@@ -46,10 +46,6 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	var imagebyte []byte
 	// get imageoption
 	imageoption, err := irh.getImageOptionByFormValue(c)
-	if err != nil {
-		log.Warn(irh.ctx, err)
-		err = errors.New("Invalid Parameters")
-	}
 	// get from storage
 	if err == nil {
 		cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
@@ -124,7 +120,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	imageoption, err := irh.getImageOptionByFormValue(c)
 	if err != nil {
 		log.Warn(irh.ctx, err)
-		return irh.errorResponse(c, http.StatusBadRequest, errors.New("Invalid Parameters"))
+		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
 	// read uploaded image
 	var file *multipart.FileHeader
@@ -256,34 +252,51 @@ func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requestu
 func (irh ImageReductionHandler) getImageOptionByFormValue(c echo.Context) (actor.ImageOperatorOption, error) {
 	var err error
 	option := actor.ImageOperatorOption{}
-	if c.FormValue(FormKeyWidth) != "" {
-		option.Width, err = strconv.Atoi(c.FormValue(FormKeyWidth))
-	}
-	if err == nil && c.FormValue(FormKeyHeight) != "" {
-		option.Height, err = strconv.Atoi(c.FormValue(FormKeyHeight))
-	}
-	if err == nil && c.FormValue(FormKeyQuality) != "" {
-		option.Quality, err = strconv.Atoi(c.FormValue(FormKeyQuality))
-	}
-	if err == nil && c.FormValue(FormKeyRotate) != "" {
-		option.Rotate = c.FormValue(FormKeyRotate)
-	}
-	if err == nil && c.FormValue(FormKeyCrop) != "" {
-		option.Crop, err = irh.getCropParam(c.FormValue(FormKeyCrop))
-	}
-	if err == nil && c.FormValue(FormKeyBrightness) != "" {
-		option.Brightness, err = strconv.Atoi(c.FormValue(FormKeyBrightness))
-	}
-	if err == nil && c.FormValue(FormKeyContrast) != "" {
-		option.Contrast, err = strconv.Atoi(c.FormValue(FormKeyContrast))
-	}
-	if err == nil && c.FormValue(FormKeyGamma) != "" {
-		option.Gamma, err = strconv.ParseFloat(c.FormValue(FormKeyGamma), 64)
-	}
+	option.Rotate = c.FormValue(FormKeyRotate)
+	option.Width, err = irh.setOptionValueInt(c.FormValue(FormKeyWidth), err)
+	option.Height, err = irh.setOptionValueInt(c.FormValue(FormKeyHeight), err)
+	option.Quality, err = irh.setOptionValueInt(c.FormValue(FormKeyQuality), err)
+	option.Brightness, err = irh.setOptionValueInt(c.FormValue(FormKeyBrightness), err)
+	option.Contrast, err = irh.setOptionValueInt(c.FormValue(FormKeyContrast), err)
+	option.Gamma, err = irh.setOptionValueFloat(c.FormValue(FormKeyGamma), err)
+	option.Crop, err = irh.getCropParam(c.FormValue(FormKeyCrop), err)
 	return option, err
 }
 
-func (irh ImageReductionHandler) getCropParam(cropparam string) ([4]int, error) {
+func (irh ImageReductionHandler) setOptionValueInt(formvalue string, err error) (int, error) {
+	if err != nil {
+		return 0, err
+	}
+	if formvalue == "" {
+		return 0, err
+	}
+	val, err := strconv.Atoi(formvalue)
+	if err != nil {
+		log.Warn(irh.ctx, err)
+		err = errors.New("Invalid parameter")
+	}
+	return val, err
+}
+
+func (irh ImageReductionHandler) setOptionValueFloat(formvalue string, err error) (float64, error) {
+	if err != nil {
+		return 0, err
+	}
+	if formvalue == "" {
+		return 0, err
+	}
+	val, err := strconv.ParseFloat(formvalue, 64)
+	if err != nil {
+		log.Warn(irh.ctx, err)
+		err = errors.New("Invalid parameter")
+	}
+	return val, err
+}
+
+func (irh ImageReductionHandler) getCropParam(cropparam string, err error) ([4]int, error) {
+	if err != nil {
+		return [4]int{}, err
+	}
 	if cropparam == "" {
 		return [4]int{}, nil
 	}
@@ -295,6 +308,8 @@ func (irh ImageReductionHandler) getCropParam(cropparam string) ([4]int, error) 
 	for _, crop := range crops {
 		intcrop, err := strconv.Atoi(crop)
 		if err != nil {
+			log.Warn(irh.ctx, err)
+			err = errors.New("Invalid crop parameter")
 			return [4]int{}, err
 		}
 		intslicecrops = append(intslicecrops, intcrop)
