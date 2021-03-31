@@ -46,6 +46,10 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	var imagebyte []byte
 	// get imageoption
 	imageoption, err := irh.getImageOptionByFormValue(c)
+	if err != nil {
+		log.Warn(irh.ctx, err)
+		err = errors.New("Invalid Parameters")
+	}
 	// get from storage
 	if err == nil {
 		cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
@@ -119,8 +123,8 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	// get imageoption
 	imageoption, err := irh.getImageOptionByFormValue(c)
 	if err != nil {
-		log.Error(irh.ctx, err)
-		return irh.errorResponse(c, http.StatusBadRequest, err)
+		log.Warn(irh.ctx, err)
+		return irh.errorResponse(c, http.StatusBadRequest, errors.New("Invalid Parameters"))
 	}
 	// read uploaded image
 	var file *multipart.FileHeader
@@ -266,6 +270,15 @@ func (irh ImageReductionHandler) getImageOptionByFormValue(c echo.Context) (acto
 	}
 	if err == nil && c.FormValue(FormKeyCrop) != "" {
 		option.Crop, err = irh.getCropParam(c.FormValue(FormKeyCrop))
+	}
+	if err == nil && c.FormValue(FormKeyBrightness) != "" {
+		option.Brightness, err = strconv.Atoi(c.FormValue(FormKeyBrightness))
+	}
+	if err == nil && c.FormValue(FormKeyContrast) != "" {
+		option.Contrast, err = strconv.Atoi(c.FormValue(FormKeyContrast))
+	}
+	if err == nil && c.FormValue(FormKeyGamma) != "" {
+		option.Gamma, err = strconv.ParseFloat(c.FormValue(FormKeyGamma), 64)
 	}
 	return option, err
 }
