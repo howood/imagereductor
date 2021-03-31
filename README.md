@@ -17,12 +17,12 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 * key : path of storage
 * w : 500 (px)  | risizeing width with original aspect ratio
 * h : 500 (px) | risizeing height with original aspect ratio
-* q : 1~4      | change image quality
+* q : 1 ~ 4      | change image quality
 * rotate : right,left,upsidedown
 * crop : 111,222,333,444 (from point x/y - to point x/y)
-* bri : 0~100   | change image brightness
-* cont : -100~100   | change image contrast
-* gam : 0.00~     | change image gamma
+* bri : 0 ~ 100   | change image brightness
+* cont : -100 ~ 100   | change image contrast
+* gam : 0.0 ~     | change image gamma
 * nonusecache: true
 
 ## Form Key to Upload(multipart/form-data)
