@@ -27,6 +27,12 @@ const (
 	FormKeyRotate = "rotate"
 	// FormKeyCrop is form key of crop
 	FormKeyCrop = "crop"
+	// FormKeyBrightness is form key of brightness
+	FormKeyBrightness = "bri"
+	// FormKeyContrast is form key of contrast
+	FormKeyContrast = "cont"
+	// FormKeyGamma is form key of gamma
+	FormKeyGamma = "gam"
 	// FormKeyUploadFile is form key of uploadfile
 	FormKeyUploadFile = "uploadfile"
 	// FormKeyPath is form key of path

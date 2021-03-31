@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
@@ -16,6 +17,7 @@ import (
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/domain/repository"
 	log "github.com/howood/imagereductor/infrastructure/logger"
+	"github.com/howood/imagereductor/library/utils"
 	"golang.org/x/image/draw"
 	"golang.org/x/image/math/f64"
 )
@@ -70,6 +72,15 @@ func (im *ImageOperator) Decode(src io.Reader) error {
 
 // Process images process resize and more
 func (im *ImageOperator) Process() error {
+	if im.option.Gamma != 0 {
+		im.object.Source = im.gamma(im.object.Source)
+	}
+	if im.option.Contrast != 0 {
+		im.object.Source = im.contrast(im.object.Source)
+	}
+	if im.option.Brightness != 0 {
+		im.object.Source = im.brightness(im.object.Source)
+	}
 	switch {
 	case (im.option.Rotate != ""):
 		im.calcResizeXY()
@@ -140,12 +151,14 @@ func (im *ImageOperator) ImageByte() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// scale image
 func (im *ImageOperator) scale(src image.Image, rect image.Rectangle, scaler draw.Scaler) image.Image {
-	dst := image.NewRGBA(rect)
+	dst := image.NewNRGBA(rect)
 	scaler.Scale(dst, rect, src, src.Bounds(), draw.Over, nil)
 	return dst
 }
 
+// crop image
 func (im *ImageOperator) subimage(src image.Image, rect image.Rectangle) (image.Image, error) {
 	simg, ok := src.(subImager)
 	if !ok {
@@ -154,9 +167,71 @@ func (im *ImageOperator) subimage(src image.Image, rect image.Rectangle) (image.
 	return simg.SubImage(rect), nil
 }
 
+// rotate image
 func (im *ImageOperator) transform(src image.Image, rect image.Rectangle, t f64.Aff3, scaler draw.Transformer) image.Image {
-	dst := image.NewRGBA(rect)
+	dst := image.NewNRGBA(rect)
 	scaler.Transform(dst, t, src, src.Bounds(), draw.Over, nil)
+	return dst
+}
+
+// change brightness
+func (im *ImageOperator) brightness(src image.Image) *image.NRGBA {
+	lookup := make([]uint8, 256)
+	percentage := math.Min(math.Max(float64(im.option.Brightness), -100.0), 100.0)
+	for i := 0; i < 256; i++ {
+		lookup[i] = uint8(utils.InRanged(float64(i)*(percentage/100.0), 0, 255))
+	}
+	return im.convertLuminance(src, lookup)
+}
+
+// change contrast
+func (im *ImageOperator) contrast(src image.Image) *image.NRGBA {
+	lookup := make([]uint8, 256)
+	percentage := math.Min(math.Max(float64(im.option.Contrast), -100.0), 100.0)
+	v := (100.0 + percentage) / 100.0
+	for i := 0; i < 256; i++ {
+		lookup[i] = uint8(utils.InRanged(((((float64(i)/255)-0.5)*v)+0.5)*255, 0, 255))
+	}
+	return im.convertLuminance(src, lookup)
+}
+
+// change gamma
+func (im *ImageOperator) gamma(src image.Image) *image.NRGBA {
+	lookup := make([]uint8, 256)
+	e := 1.0 / math.Max(im.option.Gamma, 0.0001)
+	for i := 0; i < 256; i++ {
+		lookup[i] = uint8(utils.InRanged(math.Pow(float64(i)/255.0, e)*255.0, 0, 255))
+	}
+	return im.convertLuminance(src, lookup)
+}
+
+func (im *ImageOperator) convertLuminance(src image.Image, lookup []uint8) *image.NRGBA {
+	fnc := func(c color.RGBA) color.RGBA {
+		return color.RGBA{lookup[c.R], lookup[c.G], lookup[c.B], c.A}
+	}
+	bounds := src.Bounds()
+	dst := image.NewNRGBA(bounds)
+	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
+	for y := 0; y < dst.Bounds().Dy(); y++ {
+		for x := 0; x < dst.Bounds().Dx(); x++ {
+			dstPos := y*dst.Stride + x*4
+			dr := &dst.Pix[dstPos+0]
+			dg := &dst.Pix[dstPos+1]
+			db := &dst.Pix[dstPos+2]
+			da := &dst.Pix[dstPos+3]
+			c := color.RGBA{
+				R: *dr,
+				G: *dg,
+				B: *db,
+				A: *da,
+			}
+			c = fnc(c)
+			*dr = c.R
+			*dg = c.G
+			*db = c.B
+			*da = c.A
+		}
+	}
 	return dst
 }
 
