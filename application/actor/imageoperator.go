@@ -212,26 +212,28 @@ func (im *ImageOperator) convertLuminance(src image.Image, lookup []uint8) *imag
 	bounds := src.Bounds()
 	dst := image.NewNRGBA(bounds)
 	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
-	for y := 0; y < dst.Bounds().Dy(); y++ {
-		for x := 0; x < dst.Bounds().Dx(); x++ {
-			dstPos := y*dst.Stride + x*4
-			dr := &dst.Pix[dstPos+0]
-			dg := &dst.Pix[dstPos+1]
-			db := &dst.Pix[dstPos+2]
-			da := &dst.Pix[dstPos+3]
-			c := color.RGBA{
-				R: *dr,
-				G: *dg,
-				B: *db,
-				A: *da,
+	utils.ApplyParallel(0, dst.Bounds().Dy(), func(start, end int) {
+		for y := start; y < end; y++ {
+			for x := 0; x < dst.Bounds().Dx(); x++ {
+				dstPos := y*dst.Stride + x*4
+				dr := &dst.Pix[dstPos+0]
+				dg := &dst.Pix[dstPos+1]
+				db := &dst.Pix[dstPos+2]
+				da := &dst.Pix[dstPos+3]
+				c := color.RGBA{
+					R: *dr,
+					G: *dg,
+					B: *db,
+					A: *da,
+				}
+				c = fnc(c)
+				*dr = c.R
+				*dg = c.G
+				*db = c.B
+				*da = c.A
 			}
-			c = fnc(c)
-			*dr = c.R
-			*dg = c.G
-			*db = c.B
-			*da = c.A
 		}
-	}
+	})
 	return dst
 }
 
