@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-redis/redis"
+	redis "github.com/go-redis/redis/v8"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
@@ -51,7 +51,7 @@ func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *Redi
 	}
 	if redisConnectionMap[connectionkey] == nil || checkConnect(ctx, connectionkey) == false {
 		log.Info(ctx, "--- Create Redis Connection ---  ")
-		if err := createNewConnect(redisdb, connectionkey); err != nil {
+		if err := createNewConnect(ctx, redisdb, connectionkey); err != nil {
 			panic(err)
 		}
 	}
@@ -72,12 +72,12 @@ func (i *RedisInstance) Set(key string, value interface{}, expired time.Duration
 	log.Debug(i.ctx, "-----SET----")
 	log.Debug(i.ctx, key)
 	log.Debug(i.ctx, expired)
-	return i.client.Set(key, value, expired).Err()
+	return i.client.Set(i.ctx, key, value, expired).Err()
 }
 
 // Get gets from cache
 func (i *RedisInstance) Get(key string) (interface{}, bool) {
-	cachedvalue, err := i.client.Get(key).Result()
+	cachedvalue, err := i.client.Get(i.ctx, key).Result()
 	log.Debug(i.ctx, "-----GET----")
 	log.Debug(i.ctx, key)
 	if err == redis.Nil {
@@ -93,17 +93,17 @@ func (i *RedisInstance) Get(key string) (interface{}, bool) {
 func (i *RedisInstance) Del(key string) error {
 	log.Debug(i.ctx, "-----DEL----")
 	log.Debug(i.ctx, key)
-	return i.client.Del(key).Err()
+	return i.client.Del(i.ctx, key).Err()
 }
 
 // DelBulk bulk deletes from cache
 func (i *RedisInstance) DelBulk(key string) error {
 	log.Debug(i.ctx, "-----DelBulk----")
 	log.Debug(i.ctx, key)
-	targetkeys := i.client.Keys(key)
+	targetkeys := i.client.Keys(i.ctx, key)
 	log.Debug(i.ctx, targetkeys.Val())
 	for _, key := range targetkeys.Val() {
-		if err := i.client.Del(key).Err(); err != nil {
+		if err := i.client.Del(i.ctx, key).Err(); err != nil {
 			return err
 		}
 	}
@@ -121,21 +121,21 @@ func (i *RedisInstance) CloseConnect() error {
 }
 
 func checkConnect(ctx context.Context, connectionkey int) bool {
-	if err := checkPing(connectionkey); err != nil {
+	if err := checkPing(ctx, connectionkey); err != nil {
 		log.Error(ctx, err)
 		return false
 	}
 	return true
 }
 
-func checkPing(connectionkey int) error {
-	if _, err := redisConnectionMap[connectionkey].Ping().Result(); err != nil {
+func checkPing(ctx context.Context, connectionkey int) error {
+	if _, err := redisConnectionMap[connectionkey].Ping(ctx).Result(); err != nil {
 		return fmt.Errorf("did not connect: %v", err)
 	}
 	return nil
 }
 
-func createNewConnect(redisdb int, connectionkey int) error {
+func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error {
 	var tlsConfig *tls.Config
 	if os.Getenv("REDISTLS") == "use" {
 		tlsConfig = &tls.Config{
@@ -149,5 +149,5 @@ func createNewConnect(redisdb int, connectionkey int) error {
 		MaxRetries: RedisMaxRetry,
 		TLSConfig:  tlsConfig,
 	})
-	return checkPing(connectionkey)
+	return checkPing(ctx, connectionkey)
 }
