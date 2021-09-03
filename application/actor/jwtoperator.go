@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/domain/repository"
 	log "github.com/howood/imagereductor/infrastructure/logger"
