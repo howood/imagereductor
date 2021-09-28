@@ -137,7 +137,7 @@ func (im *ImageOperator) ImageByte() ([]byte, error) {
 	var err error
 	switch im.object.ContentType {
 	case "image/jpeg":
-		err = jpeg.Encode(buf, im.object.Dst, nil)
+		err = jpeg.Encode(buf, im.object.Dst, im.jpegOption())
 	case "image/png":
 		err = png.Encode(buf, im.object.Dst)
 	case "image/gif":
@@ -310,5 +310,20 @@ func (im *ImageOperator) calcRotateAffine(deg, moveleft, movedown float64) f64.A
 	return f64.Aff3{
 		+cos, -sin, moveleft,
 		+sin, +cos, movedown,
+	}
+}
+
+func (im *ImageOperator) jpegOption() *jpeg.Options {
+	switch im.option.Quality {
+	case 1:
+		return &jpeg.Options{Quality: 75}
+	case 2:
+		return &jpeg.Options{Quality: 90}
+	case 3:
+		return &jpeg.Options{Quality: 100}
+	case 4:
+		return &jpeg.Options{Quality: 100}
+	default:
+		return &jpeg.Options{Quality: 100}
 	}
 }
