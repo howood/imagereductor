@@ -318,12 +318,12 @@ func (im *ImageOperator) jpegOption() *jpeg.Options {
 	case 1:
 		return &jpeg.Options{Quality: 75}
 	case 2:
-		return &jpeg.Options{Quality: 90}
+		return &jpeg.Options{Quality: 85}
 	case 3:
-		return &jpeg.Options{Quality: 100}
+		return &jpeg.Options{Quality: 90}
 	case 4:
 		return &jpeg.Options{Quality: 100}
 	default:
-		return &jpeg.Options{Quality: 100}
+		return &jpeg.Options{Quality: 85}
 	}
 }
