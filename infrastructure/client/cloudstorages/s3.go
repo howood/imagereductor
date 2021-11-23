@@ -124,7 +124,7 @@ func (s3instance *S3Instance) Get(bucket string, key string) (string, []byte, er
 	return contenttype, buf.Bytes(), nil
 }
 
-// GetByStreaming gets stream from storage
+// GetByStreaming gets from storage by streaming
 func (s3instance *S3Instance) GetByStreaming(bucket string, key string) (string, io.ReadCloser, error) {
 	log.Debug(s3instance.ctx, bucket)
 	log.Debug(s3instance.ctx, key)

@@ -95,7 +95,7 @@ func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, 
 	return contenttype, response, nil
 }
 
-// GetByStreaming gets stream from storage
+// GetByStreaming gets from storage by streaming
 func (gcsinstance *GCSInstance) GetByStreaming(bucket string, key string) (string, io.ReadCloser, error) {
 	log.Debug(gcsinstance.ctx, bucket)
 	log.Debug(gcsinstance.ctx, key)

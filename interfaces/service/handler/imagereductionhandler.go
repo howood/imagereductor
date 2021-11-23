@@ -108,7 +108,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 	return c.Blob(http.StatusOK, contenttype, filebyte)
 }
 
-// RequestStreaming is get stream non image file from storage
+// RequestStreaming is get non image file from storage by streaming
 func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
