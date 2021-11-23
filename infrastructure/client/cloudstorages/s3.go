@@ -124,6 +124,23 @@ func (s3instance *S3Instance) Get(bucket string, key string) (string, []byte, er
 	return contenttype, buf.Bytes(), nil
 }
 
+// GetByStreaming gets from storage by streaming
+func (s3instance *S3Instance) GetByStreaming(bucket string, key string) (string, io.ReadCloser, error) {
+	log.Debug(s3instance.ctx, bucket)
+	log.Debug(s3instance.ctx, key)
+	response, err := s3instance.client.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		return "", nil, err
+	}
+	contenttype := *response.ContentType
+	log.Debug(s3instance.ctx, contenttype)
+	return contenttype, response.Body, nil
+}
+
 // List get list from storage
 func (s3instance *S3Instance) List(bucket string, key string) ([]string, error) {
 	log.Debug(s3instance.ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))

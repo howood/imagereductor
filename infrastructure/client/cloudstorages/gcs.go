@@ -33,7 +33,7 @@ func NewGCS(ctx context.Context) *GCSInstance {
 	var I *GCSInstance
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	I = &GCSInstance{
 		client: client,
@@ -93,6 +93,21 @@ func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, 
 	}
 
 	return contenttype, response, nil
+}
+
+// GetByStreaming gets from storage by streaming
+func (gcsinstance *GCSInstance) GetByStreaming(bucket string, key string) (string, io.ReadCloser, error) {
+	log.Debug(gcsinstance.ctx, bucket)
+	log.Debug(gcsinstance.ctx, key)
+
+	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(gcsinstance.ctx)
+	if err != nil {
+		return "", nil, err
+	}
+	defer reader.Close()
+
+	contenttype := reader.ContentType()
+	return contenttype, reader, nil
 }
 
 // List get list from storage

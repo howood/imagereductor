@@ -30,6 +30,16 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 * path : path of storage
 * uploadfile : filepath
 
+## Endpoint
+| Method        | endpoint          | usage          |
+| --------------- |---------------|---------------|
+| GET | / | Get image file using query options |
+| POST | / | Upload image file with bearer token of authorization header|
+| GET | /files | Get non-image file using 'key' query option only |
+| POST | /files | Upload non-image file with bearer token of authorization header|
+| GET | /streaming | Get non-image file using 'key' query option only with HTTP Streaming |
+| GET | /token | Get bearer token (Only IP addresses restricted by TOKENAPI_ALLOW_IPS can be requested) |
+
 ## using docker
 
 | env        | param          |

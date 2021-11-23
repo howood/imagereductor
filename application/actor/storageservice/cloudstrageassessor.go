@@ -48,6 +48,11 @@ func (csa *CloudStorageAssessor) Get(key string) (string, []byte, error) {
 	return csa.instance.Get(csa.bucket, key)
 }
 
+// GetByStreaming returns storage contents by streaming
+func (csa *CloudStorageAssessor) GetByStreaming(key string) (string, io.ReadCloser, error) {
+	return csa.instance.GetByStreaming(csa.bucket, key)
+}
+
 // Put puts storage contents
 func (csa *CloudStorageAssessor) Put(path string, file io.ReadSeeker) error {
 	return csa.instance.Put(csa.bucket, path, file)
