@@ -108,6 +108,39 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 	return c.Blob(http.StatusOK, contenttype, filebyte)
 }
 
+// RequestStreaming is get stream non image file from storage
+func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
+	requesturi := c.Request().URL.RequestURI()
+	xRequestID := requestid.GetRequestID(c.Request())
+	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
+	log.Info(irh.ctx, c.Request().Method)
+	log.Info(irh.ctx, c.Request().Header)
+
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+	contenttype, response, err := cloudstorageassessor.GetByStreaming(c.FormValue(FormKeyStorageKey))
+	if err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
+	defer response.Close()
+
+	irh.setResponseHeader(
+		c,
+		irh.setNewLatsModified(),
+		"",
+		"",
+		irh.ctx.Value(echo.HeaderXRequestID).(string),
+	)
+	c.Response().Header().Set(echo.HeaderContentType, contenttype)
+	c.Response().WriteHeader(http.StatusOK)
+
+	_, err = io.Copy(c.Response().Writer, response)
+	if err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
+	return nil
+}
+
 // Upload is to upload to storage
 func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
