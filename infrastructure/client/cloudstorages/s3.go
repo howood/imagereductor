@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	extramimetype "github.com/gabriel-vasile/mimetype"
 	"golang.org/x/net/context"
 
 	"bytes"
@@ -185,6 +186,14 @@ func (s3instance *S3Instance) getContentType(out io.ReadSeeker) (string, error) 
 		log.Warn(s3instance.ctx, err)
 	}
 	contentType := http.DetectContentType(buffer)
+	if contentType == "" || contentType == mimeOctetStream {
+		out.Seek(0, os.SEEK_SET)
+		if mtype, err := extramimetype.DetectReader(out); err == nil {
+			log.Debug(s3instance.ctx, mtype)
+			contentType = mtype.String()
+		}
+
+	}
 	log.Debug(s3instance.ctx, contentType)
 	return contentType, nil
 }

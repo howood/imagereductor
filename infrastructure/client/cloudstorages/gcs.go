@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
+	extramimetype "github.com/gabriel-vasile/mimetype"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 
@@ -19,7 +20,7 @@ import (
 var GcsBucketUploadfiles = os.Getenv("GCS_BUKET")
 
 // GcsProjectID is GCS Project ID
-var GcsProjectID = os.Getenv("GcsProjectID")
+var GcsProjectID = os.Getenv("GCS_PROJECTID")
 
 // GCSInstance struct
 type GCSInstance struct {
@@ -59,7 +60,12 @@ func (gcsinstance *GCSInstance) Put(bucket string, path string, file io.ReadSeek
 		return err
 	}
 	mimetype := http.DetectContentType(bytes)
-
+	if mimetype == "" || mimetype == mimeOctetStream {
+		mtype := extramimetype.Detect(bytes)
+		log.Debug(gcsinstance.ctx, mtype)
+		mimetype = mtype.String()
+	}
+	log.Debug(gcsinstance.ctx, mimetype)
 	object := gcsinstance.client.Bucket(bucket).Object(path)
 	writer := object.NewWriter(gcsinstance.ctx)
 
