@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -39,6 +40,9 @@ const (
 	FormKeyPath = "path"
 )
 
+const marshalPrefix = ""
+const marshalIndent = "    "
+
 // BaseHandler struct
 type BaseHandler struct {
 	ctx context.Context
@@ -49,7 +53,7 @@ func (bh BaseHandler) errorResponse(c echo.Context, statudcode int, err error) e
 		statudcode = http.StatusNotFound
 	}
 	c.Response().Header().Set(echo.HeaderXRequestID, bh.ctx.Value(echo.HeaderXRequestID).(string))
-	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, "    ")
+	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, marshalIndent)
 }
 
 func (bh BaseHandler) setResponseHeader(c echo.Context, lastmodified, contentlength string, expires, xrequestid string) {
@@ -72,4 +76,8 @@ func (bh BaseHandler) setExpires(epires time.Time) string {
 
 func (bh BaseHandler) getHeaderExpires() time.Duration {
 	return time.Duration(utils.GetOsEnvInt("HEADEREXPIRED", 300))
+}
+
+func (bh BaseHandler) jsonToByte(jsondata interface{}) ([]byte, error) {
+	return json.MarshalIndent(jsondata, marshalPrefix, marshalIndent)
 }

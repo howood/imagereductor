@@ -149,6 +149,36 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 	return nil
 }
 
+// RequestInfo is get info from storage
+func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
+	requesturi := c.Request().URL.RequestURI()
+	xRequestID := requestid.GetRequestID(c.Request())
+	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
+	log.Info(irh.ctx, c.Request().Method)
+	log.Info(irh.ctx, c.Request().Header)
+	if c.FormValue(FormKeyStorageKey) == "" {
+		return irh.errorResponse(c, http.StatusBadRequest, errors.New(FormKeyStorageKey+" is required"))
+	}
+	if c.FormValue(FormKeyNonUseCache) != "true" && irh.getCache(c, requesturi) {
+		log.Info(irh.ctx, "cache hit!")
+		return nil
+	}
+
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+	objectInfo, err := cloudstorageassessor.GetObjectInfo(c.FormValue(FormKeyStorageKey))
+
+	if err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
+	if infoByteData, err := irh.jsonToByte(objectInfo); err != nil {
+		log.Error(irh.ctx, err)
+	} else {
+		irh.setCache(echo.MIMEApplicationJSON, infoByteData, requesturi)
+	}
+	return c.JSONPretty(http.StatusOK, objectInfo, marshalIndent)
+}
+
 // Upload is to upload to storage
 func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())

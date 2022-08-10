@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/howood/imagereductor/domain/entity"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
@@ -140,6 +141,28 @@ func (s3instance *S3Instance) GetByStreaming(bucket string, key string) (string,
 	contenttype := *response.ContentType
 	log.Debug(s3instance.ctx, contenttype)
 	return contenttype, response.Body, nil
+}
+
+// GetObjectInfo gets from storage
+func (s3instance *S3Instance) GetObjectInfo(bucket string, key string) (entity.StorageObjectInfo, error) {
+	log.Debug(s3instance.ctx, bucket)
+	log.Debug(s3instance.ctx, key)
+	so := entity.StorageObjectInfo{}
+	response, err := s3instance.client.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		return so, err
+	}
+	if response.ContentType != nil {
+		so.ContentType = *response.ContentType
+	}
+	if response.ContentType != nil {
+		so.ContentLength = int(*response.ContentLength)
+	}
+	return so, nil
 }
 
 // List get list from storage

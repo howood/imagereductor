@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/howood/imagereductor/domain/entity"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
@@ -114,6 +115,22 @@ func (gcsinstance *GCSInstance) GetByStreaming(bucket string, key string) (strin
 
 	contenttype := reader.ContentType()
 	return contenttype, reader, nil
+}
+
+// GetObjectInfo gets from storage
+func (gcsinstance *GCSInstance) GetObjectInfo(bucket string, key string) (entity.StorageObjectInfo, error) {
+	log.Debug(gcsinstance.ctx, bucket)
+	log.Debug(gcsinstance.ctx, key)
+	so := entity.StorageObjectInfo{}
+	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(gcsinstance.ctx)
+	if err != nil {
+		return so, err
+	}
+	defer reader.Close()
+
+	so.ContentType = reader.ContentType()
+	so.ContentLength = int(reader.Size())
+	return so, nil
 }
 
 // List get list from storage
