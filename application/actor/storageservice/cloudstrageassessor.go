@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/infrastructure/client/cloudstorages"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
@@ -51,6 +52,11 @@ func (csa *CloudStorageAssessor) Get(key string) (string, []byte, error) {
 // GetByStreaming returns storage contents by streaming
 func (csa *CloudStorageAssessor) GetByStreaming(key string) (string, io.ReadCloser, error) {
 	return csa.instance.GetByStreaming(csa.bucket, key)
+}
+
+// GetObjectInfo returns storage contents info
+func (csa *CloudStorageAssessor) GetObjectInfo(key string) (entity.StorageObjectInfo, error) {
+	return csa.instance.GetObjectInfo(csa.bucket, key)
 }
 
 // Put puts storage contents

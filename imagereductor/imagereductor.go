@@ -35,6 +35,7 @@ func main() {
 	e.GET("/files", handler.ImageReductionHandler{}.RequestFile)
 	e.POST("/files", handler.ImageReductionHandler{}.UploadFile, middleware.JWTWithConfig(jwtconfig))
 	e.GET("/streaming", handler.ImageReductionHandler{}.RequestStreaming)
+	e.GET("/info", handler.ImageReductionHandler{}.RequestInfo)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", DefaultPort)))
 }
