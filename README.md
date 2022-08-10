@@ -38,6 +38,7 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 | GET | /files | Get non-image file using 'key' query option only |
 | POST | /files | Upload non-image file with bearer token of authorization header|
 | GET | /streaming | Get non-image file using 'key' query option only with HTTP Streaming |
+| GET | /info | Get file (Content-Type / Content-Length) info using 'key' and 'nonusecache' query option only |
 | GET | /token | Get bearer token (Only IP addresses restricted by TOKENAPI_ALLOW_IPS can be requested) |
 
 ## using docker
