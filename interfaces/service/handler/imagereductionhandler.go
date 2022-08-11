@@ -98,6 +98,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 		log.Info(irh.ctx, "cache hit!")
 		return nil
 	}
+	// get from storage
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
 	contenttype, filebyte, err := cloudstorageassessor.Get(c.FormValue(FormKeyStorageKey))
 	if err != nil {
@@ -125,7 +126,12 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 	if c.FormValue(FormKeyStorageKey) == "" {
 		return irh.errorResponse(c, http.StatusBadRequest, errors.New(FormKeyStorageKey+" is required"))
 	}
+	// get from storage
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
+	objectInfo, err := cloudstorageassessor.GetObjectInfo(c.FormValue(FormKeyStorageKey))
+	if err != nil {
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
 	contenttype, response, err := cloudstorageassessor.GetByStreaming(c.FormValue(FormKeyStorageKey))
 	if err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
@@ -135,7 +141,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 	irh.setResponseHeader(
 		c,
 		irh.setNewLatsModified(),
-		"",
+		fmt.Sprintf("%d", objectInfo.ContentLength),
 		"",
 		irh.ctx.Value(echo.HeaderXRequestID).(string),
 	)
@@ -164,10 +170,9 @@ func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
 		log.Info(irh.ctx, "cache hit!")
 		return nil
 	}
-
+	// get from storage
 	cloudstorageassessor := storageservice.NewCloudStorageAssessor(irh.ctx)
 	objectInfo, err := cloudstorageassessor.GetObjectInfo(c.FormValue(FormKeyStorageKey))
-
 	if err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
