@@ -9,7 +9,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.2
-	github.com/labstack/echo/v4 v4.7.2
+	github.com/labstack/echo/v4 v4.9.0
 	github.com/mattn/go-colorable v0.1.11
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/xid v1.3.0
