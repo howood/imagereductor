@@ -29,6 +29,10 @@ const (
 	ImageRotateLeft = "left"
 	// ImageRotateUpsidedown is rotate image upside down
 	ImageRotateUpsidedown = "upsidedown"
+	// ImageRotateAutoVertical is rotate image auto vertical
+	ImageRotateAutoVertical = "autovertical"
+	// ImageRotateAutoHorizontal is rotate image auto horizontal
+	ImageRotateAutoHorizontal = "autohorizontal"
 )
 
 // ImageOperator struct
@@ -83,8 +87,12 @@ func (im *ImageOperator) Process() error {
 	}
 	switch {
 	case (im.option.Rotate != ""):
+		err := im.rotate()
+		if err != nil {
+			return err
+		}
 		im.calcResizeXY()
-		return im.rotateAndResize()
+		return im.resize()
 	case (reflect.DeepEqual(im.option.Crop, [4]int{}) == false):
 		im.calcResizeXYWithCrop()
 		return im.cropAndResize()
@@ -113,18 +121,38 @@ func (im *ImageOperator) cropAndResize() error {
 	return nil
 }
 
-// rotateAndResize images
-func (im *ImageOperator) rotateAndResize() error {
+// rotate images
+func (im *ImageOperator) rotate() error {
+	originX := im.object.OriginX
+	originY := im.object.OriginY
 	switch im.option.Rotate {
 	case ImageRotateRight:
-		rect := image.Rect(0, 0, im.object.DstY, im.object.DstX)
-		im.object.Dst = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, float64(im.object.DstY), 0), im.getDrawer())
+		rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
+		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, float64(im.object.OriginY), 0), im.getDrawer())
+		im.object.OriginX = originY
+		im.object.OriginY = originX
 	case ImageRotateLeft:
-		rect := image.Rect(0, 0, im.object.DstY, im.object.DstX)
-		im.object.Dst = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.DstX)), im.getDrawer())
+		rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
+		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
+		im.object.OriginX = originY
+		im.object.OriginY = originX
 	case ImageRotateUpsidedown:
-		rect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
-		im.object.Dst = im.transform(im.object.Source, rect, im.calcRotateAffine(180.0, float64(im.object.DstX), float64(im.object.DstY)), im.getDrawer())
+		rect := image.Rect(0, 0, im.object.OriginX, im.object.OriginY)
+		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(180.0, float64(im.object.OriginX), float64(im.object.OriginY)), im.getDrawer())
+	case ImageRotateAutoVertical:
+		if !im.isOriginVertical() {
+			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, float64(im.object.OriginY), 0), im.getDrawer())
+			im.object.OriginX = originY
+			im.object.OriginY = originX
+		}
+	case ImageRotateAutoHorizontal:
+		if !im.isOriginHorizontal() {
+			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
+			im.object.OriginX = originY
+			im.object.OriginY = originX
+		}
 	default:
 		return fmt.Errorf("Invalid Rotate Parameter")
 	}
@@ -326,4 +354,12 @@ func (im *ImageOperator) jpegOption() *jpeg.Options {
 	default:
 		return &jpeg.Options{Quality: 85}
 	}
+}
+
+func (im *ImageOperator) isOriginVertical() bool {
+	return im.object.OriginX <= im.object.OriginY
+}
+
+func (im *ImageOperator) isOriginHorizontal() bool {
+	return im.object.OriginY <= im.object.OriginX
 }
