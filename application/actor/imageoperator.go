@@ -140,14 +140,14 @@ func (im *ImageOperator) rotate() error {
 		rect := image.Rect(0, 0, im.object.OriginX, im.object.OriginY)
 		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(180.0, float64(im.object.OriginX), float64(im.object.OriginY)), im.getDrawer())
 	case ImageRotateAutoVertical:
-		if !im.isOriginVertical() {
+		if im.object.OriginX > im.object.OriginY {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
 			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, float64(im.object.OriginY), 0), im.getDrawer())
 			im.object.OriginX = originY
 			im.object.OriginY = originX
 		}
 	case ImageRotateAutoHorizontal:
-		if !im.isOriginHorizontal() {
+		if im.object.OriginY > im.object.OriginX {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
 			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
 			im.object.OriginX = originY
@@ -354,12 +354,4 @@ func (im *ImageOperator) jpegOption() *jpeg.Options {
 	default:
 		return &jpeg.Options{Quality: 85}
 	}
-}
-
-func (im *ImageOperator) isOriginVertical() bool {
-	return im.object.OriginX <= im.object.OriginY
-}
-
-func (im *ImageOperator) isOriginHorizontal() bool {
-	return im.object.OriginY <= im.object.OriginX
 }
