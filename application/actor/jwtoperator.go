@@ -27,9 +27,9 @@ type JwtOperator struct {
 func NewJwtOperator(ctx context.Context, username string, admin bool, expired time.Duration) repository.JwtClaimsRepository {
 	return &JwtOperator{
 		jwtClaims: &entity.JwtClaims{
-			username,
-			admin,
-			jwt.RegisteredClaims{
+			Name:  username,
+			Admin: admin,
+			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * expired)),
 			},
 		},
