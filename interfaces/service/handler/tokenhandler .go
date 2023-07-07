@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/howood/imagereductor/application/actor"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/infrastructure/uuid"
+	"github.com/howood/imagereductor/interfaces/service/usecase"
 	"github.com/labstack/echo/v4"
 )
 
@@ -24,7 +24,6 @@ func (th TokenHandler) Request(c echo.Context) error {
 	log.Info(th.ctx, c.Request().Method)
 	log.Info(th.ctx, c.Request().Header)
 	claimname := uuid.GetUUID(uuid.SatoriUUID)
-	jwtinstance := actor.NewJwtOperator(th.ctx, claimname, false, actor.TokenExpired)
-	tokenstr := jwtinstance.CreateToken(actor.TokenSecret)
+	tokenstr := usecase.TokenUsecase{}.CreateToken(th.ctx, claimname)
 	return c.JSONPretty(http.StatusOK, map[string]interface{}{"token": tokenstr}, "    ")
 }
