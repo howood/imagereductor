@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/infrastructure/custommiddleware"
 	"github.com/howood/imagereductor/interfaces/service/handler"
 	"github.com/howood/imagereductor/library/utils"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -25,15 +27,17 @@ func main() {
 	if os.Getenv("ADMIN_MODE") == "enable" {
 		e.GET("/token", handler.TokenHandler{}.Request, custommiddleware.IPRestriction())
 	}
-	jwtconfig := middleware.JWTConfig{
-		Skipper:    custommiddleware.OptionsMethodSkipper,
-		Claims:     &entity.JwtClaims{},
+	jwtconfig := echojwt.Config{
+		Skipper: custommiddleware.OptionsMethodSkipper,
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(entity.JwtClaims)
+		},
 		SigningKey: []byte(actor.TokenSecret),
 	}
 	e.GET("/", handler.ImageReductionHandler{}.Request)
-	e.POST("/", handler.ImageReductionHandler{}.Upload, middleware.JWTWithConfig(jwtconfig))
+	e.POST("/", handler.ImageReductionHandler{}.Upload, echojwt.WithConfig(jwtconfig))
 	e.GET("/files", handler.ImageReductionHandler{}.RequestFile)
-	e.POST("/files", handler.ImageReductionHandler{}.UploadFile, middleware.JWTWithConfig(jwtconfig))
+	e.POST("/files", handler.ImageReductionHandler{}.UploadFile, echojwt.WithConfig(jwtconfig))
 	e.GET("/streaming", handler.ImageReductionHandler{}.RequestStreaming)
 	e.GET("/info", handler.ImageReductionHandler{}.RequestInfo)
 

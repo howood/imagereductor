@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	redis "github.com/go-redis/redis/v8"
 	log "github.com/howood/imagereductor/infrastructure/logger"
+	redis "github.com/redis/go-redis/v9"
 )
 
 const (

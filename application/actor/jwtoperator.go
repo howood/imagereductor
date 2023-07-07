@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/domain/repository"
 	log "github.com/howood/imagereductor/infrastructure/logger"
@@ -29,8 +29,8 @@ func NewJwtOperator(ctx context.Context, username string, admin bool, expired ti
 		jwtClaims: &entity.JwtClaims{
 			Name:  username,
 			Admin: admin,
-			StandardClaims: jwt.StandardClaims{
-				ExpiresAt: time.Now().Add(time.Minute * expired).Unix(),
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * expired)),
 			},
 		},
 		ctx: ctx,
