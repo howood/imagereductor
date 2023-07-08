@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/howood/imagereductor/application/usecase"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/infrastructure/uuid"
-	"github.com/howood/imagereductor/interfaces/service/usecase"
 	"github.com/labstack/echo/v4"
 )
 

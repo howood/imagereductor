@@ -8,14 +8,16 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/howood/imagereductor/application/actor"
+	"github.com/howood/imagereductor/application/usecase"
 	"github.com/howood/imagereductor/application/validator"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
-	"github.com/howood/imagereductor/interfaces/service/config"
-	"github.com/howood/imagereductor/interfaces/service/usecase"
+	"github.com/howood/imagereductor/interfaces/config"
 	"github.com/howood/imagereductor/library/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -40,7 +42,13 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		log.Info(irh.ctx, "cache hit!")
 		return nil
 	}
-	contenttype, imagebyte, err := usecase.ImageUsecase{Ctx: irh.ctx}.GetImage(c, c.FormValue(config.FormKeyStorageKey))
+	// get imageoption
+	imageoption, err := irh.getImageOptionByFormValue(c)
+	if err != nil {
+		log.Warn(irh.ctx, err)
+		return irh.errorResponse(c, http.StatusBadRequest, err)
+	}
+	contenttype, imagebyte, err := usecase.ImageUsecase{Ctx: irh.ctx}.GetImage(imageoption, c.FormValue(config.FormKeyStorageKey))
 	if err != nil {
 		return irh.errorResponse(c, http.StatusBadRequest, err)
 	}
@@ -159,7 +167,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	log.Info(irh.ctx, c.Request().Header)
 	var err error
 	// get imageoption
-	imageoption, err := usecase.ImageUsecase{Ctx: irh.ctx}.GetImageOptionByFormValue(c)
+	imageoption, err := irh.getImageOptionByFormValue(c)
 	if err != nil {
 		log.Warn(irh.ctx, err)
 		return irh.errorResponse(c, http.StatusBadRequest, err)
@@ -249,4 +257,74 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 
 func (irh ImageReductionHandler) setCache(mimetype string, data []byte, requesturi string) {
 	usecase.CacheUsecase{Ctx: irh.ctx}.SetCache(mimetype, data, requesturi, irh.setNewLatsModified())
+}
+
+func (irh ImageReductionHandler) getImageOptionByFormValue(c echo.Context) (actor.ImageOperatorOption, error) {
+	var err error
+	option := actor.ImageOperatorOption{}
+	option.Rotate = c.FormValue(config.FormKeyRotate)
+	option.Width, err = irh.setOptionValueInt(c.FormValue(config.FormKeyWidth), err)
+	option.Height, err = irh.setOptionValueInt(c.FormValue(config.FormKeyHeight), err)
+	option.Quality, err = irh.setOptionValueInt(c.FormValue(config.FormKeyQuality), err)
+	option.Brightness, err = irh.setOptionValueInt(c.FormValue(config.FormKeyBrightness), err)
+	option.Contrast, err = irh.setOptionValueInt(c.FormValue(config.FormKeyContrast), err)
+	option.Gamma, err = irh.setOptionValueFloat(c.FormValue(config.FormKeyGamma), err)
+	option.Crop, err = irh.getCropParam(c.FormValue(config.FormKeyCrop), err)
+	return option, err
+}
+
+func (irh ImageReductionHandler) setOptionValueInt(formvalue string, err error) (int, error) {
+	if err != nil {
+		return 0, err
+	}
+	if formvalue == "" {
+		return 0, err
+	}
+	val, err := strconv.Atoi(formvalue)
+	if err != nil {
+		log.Warn(irh.ctx, err)
+		err = errors.New("Invalid parameter")
+	}
+	return val, err
+}
+
+func (irh ImageReductionHandler) setOptionValueFloat(formvalue string, err error) (float64, error) {
+	if err != nil {
+		return 0, err
+	}
+	if formvalue == "" {
+		return 0, err
+	}
+	val, err := strconv.ParseFloat(formvalue, 64)
+	if err != nil {
+		log.Warn(irh.ctx, err)
+		err = errors.New("Invalid parameter")
+	}
+	return val, err
+}
+
+func (irh ImageReductionHandler) getCropParam(cropparam string, err error) ([4]int, error) {
+	if err != nil {
+		return [4]int{}, err
+	}
+	if cropparam == "" {
+		return [4]int{}, nil
+	}
+	crops := strings.Split(cropparam, ",")
+	if len(crops) != 4 {
+		return [4]int{}, fmt.Errorf("crop parameters must need four with comma like : 111,222,333,444")
+	}
+	intslicecrops := make([]int, 0)
+	for _, crop := range crops {
+		intcrop, err := strconv.Atoi(crop)
+		if err != nil {
+			log.Warn(irh.ctx, err)
+			err = errors.New("Invalid crop parameter")
+			return [4]int{}, err
+		}
+		intslicecrops = append(intslicecrops, intcrop)
+	}
+	var intcrops [4]int
+	copy(intcrops[:], intslicecrops[:4])
+	return intcrops, nil
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/infrastructure/custommiddleware"
-	"github.com/howood/imagereductor/interfaces/service/handler"
+	"github.com/howood/imagereductor/interfaces/handler"
 	"github.com/howood/imagereductor/library/utils"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
