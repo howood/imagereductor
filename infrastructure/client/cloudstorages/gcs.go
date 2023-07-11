@@ -9,7 +9,6 @@ import (
 	"google.golang.org/api/iterator"
 
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -56,7 +55,7 @@ func (gcsinstance *GCSInstance) init() {
 
 // Put puts to storage
 func (gcsinstance *GCSInstance) Put(bucket string, path string, file io.ReadSeeker) error {
-	bytes, err := ioutil.ReadAll(file)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, 
 
 	contenttype := reader.ContentType()
 	// CloudStorage上のObjectの、コンテンツの読み込み
-	response, err := ioutil.ReadAll(reader)
+	response, err := io.ReadAll(reader)
 	if err != nil {
 		return "", nil, err
 	}
