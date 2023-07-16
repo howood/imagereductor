@@ -7,7 +7,7 @@ import (
 
 var numParallelInstance = runtime.NumCPU() * 5
 
-//ApplyParallel is apply each funcs parallelly
+// ApplyParallel is apply each funcs parallelly
 func ApplyParallel(start, end int, fnc func(start, end int)) {
 	chunks := divideToChunk(start, end)
 	var wg sync.WaitGroup
