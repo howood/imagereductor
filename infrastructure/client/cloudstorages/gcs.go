@@ -91,7 +91,7 @@ func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, 
 	}
 	defer reader.Close()
 
-	contenttype := reader.ContentType()
+	contenttype := reader.Attrs.ContentType
 	// CloudStorage上のObjectの、コンテンツの読み込み
 	response, err := io.ReadAll(reader)
 	if err != nil {
@@ -112,7 +112,7 @@ func (gcsinstance *GCSInstance) GetByStreaming(bucket string, key string) (strin
 	}
 	defer reader.Close()
 
-	contenttype := reader.ContentType()
+	contenttype := reader.Attrs.ContentType
 	return contenttype, reader, nil
 }
 
@@ -127,8 +127,8 @@ func (gcsinstance *GCSInstance) GetObjectInfo(bucket string, key string) (entity
 	}
 	defer reader.Close()
 
-	so.ContentType = reader.ContentType()
-	so.ContentLength = int(reader.Size())
+	so.ContentType = reader.Attrs.ContentType
+	so.ContentLength = int(reader.Attrs.Size)
 	return so, nil
 }
 

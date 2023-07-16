@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	extramimetype "github.com/gabriel-vasile/mimetype"
 	"golang.org/x/net/context"
 
@@ -29,14 +28,6 @@ type S3Instance struct {
 	ctx    context.Context
 }
 
-// downloader struct
-type downloader struct {
-	*s3manager.Downloader
-	bucket string
-	file   string
-	dir    string
-}
-
 // NewS3 creates a new S3Instance
 func NewS3(ctx context.Context) *S3Instance {
 	log.Debug(ctx, "----S3 DNS----")
@@ -52,7 +43,7 @@ func NewS3(ctx context.Context) *S3Instance {
 	if os.Getenv("AWS_S3_LOCALUSE") != "" {
 		log.Debug(ctx, "-----use local-----")
 		I = &S3Instance{
-			client: s3.New(session.New(), &aws.Config{
+			client: s3.New(session.Must(session.NewSession()), &aws.Config{
 				Region:           aws.String(os.Getenv("AWS_S3_REGION")),
 				Endpoint:         aws.String(os.Getenv("AWS_S3_ENDPOINT")),
 				Credentials:      cred,
@@ -63,7 +54,7 @@ func NewS3(ctx context.Context) *S3Instance {
 		}
 	} else {
 		I = &S3Instance{
-			client: s3.New(session.New(), &aws.Config{
+			client: s3.New(session.Must(session.NewSession()), &aws.Config{
 				Region:      aws.String(os.Getenv("AWS_S3_REGION")),
 				Credentials: cred,
 			}),
@@ -87,12 +78,18 @@ func (s3instance *S3Instance) init() {
 // Put puts to storage
 func (s3instance *S3Instance) Put(bucket string, path string, file io.ReadSeeker) error {
 	//ファイルのオフセットを先頭に戻す
-	file.Seek(0, os.SEEK_SET)
+	_, err := file.Seek(0, io.SeekStart)
+	if err != nil {
+		return err
+	}
 	mimetype, errfile := s3instance.getContentType(file)
 	if errfile != nil {
 		return errfile
 	}
-	file.Seek(0, os.SEEK_SET)
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return err
+	}
 	result, err := s3instance.client.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(path),
@@ -210,7 +207,9 @@ func (s3instance *S3Instance) getContentType(out io.ReadSeeker) (string, error) 
 	}
 	contentType := http.DetectContentType(buffer)
 	if contentType == "" || contentType == mimeOctetStream {
-		out.Seek(0, os.SEEK_SET)
+		if _, err := out.Seek(0, io.SeekStart); err != nil {
+			return "", err
+		}
 		if mtype, err := extramimetype.DetectReader(out); err == nil {
 			log.Debug(s3instance.ctx, mtype)
 			contentType = mtype.String()

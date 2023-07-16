@@ -31,7 +31,7 @@ type ImageReductionHandler struct {
 func (irh ImageReductionHandler) Request(c echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
-	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	irh.ctx = context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
@@ -58,7 +58,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		irh.setNewLatsModified(),
 		fmt.Sprintf("%d", len(string(imagebyte))),
 		irh.setExpires(time.Now()),
-		irh.ctx.Value(echo.HeaderXRequestID).(string),
+		fmt.Sprintf("%v", irh.ctx.Value(requestid.GetRequestIDKey())),
 	)
 	return c.Blob(http.StatusOK, contenttype, imagebyte)
 }
@@ -67,7 +67,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
-	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	irh.ctx = context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
@@ -90,7 +90,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 		irh.setNewLatsModified(),
 		fmt.Sprintf("%d", len(string(filebyte))),
 		"",
-		irh.ctx.Value(echo.HeaderXRequestID).(string),
+		irh.ctx.Value(requestid.GetRequestIDKey()).(string),
 	)
 	return c.Blob(http.StatusOK, contenttype, filebyte)
 }
@@ -99,7 +99,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
-	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	irh.ctx = context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
@@ -118,7 +118,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 		irh.setNewLatsModified(),
 		fmt.Sprintf("%d", contentLength),
 		"",
-		irh.ctx.Value(echo.HeaderXRequestID).(string),
+		irh.ctx.Value(requestid.GetRequestIDKey()).(string),
 	)
 	c.Response().Header().Set(echo.HeaderContentType, contenttype)
 	c.Response().WriteHeader(http.StatusOK)
@@ -134,7 +134,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
-	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	irh.ctx = context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(irh.ctx, "========= START REQUEST : "+requesturi)
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
@@ -161,7 +161,7 @@ func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
 // Upload is to upload to storage
 func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
-	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	irh.ctx = context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(irh.ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
@@ -203,7 +203,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 // UploadFile is to upload non image file to storage
 func (irh ImageReductionHandler) UploadFile(c echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
-	irh.ctx = context.WithValue(context.Background(), echo.HeaderXRequestID, xRequestID)
+	irh.ctx = context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(irh.ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(irh.ctx, c.Request().Method)
 	log.Info(irh.ctx, c.Request().Header)
@@ -244,7 +244,7 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 		cachedcontent.GetLastModified(),
 		fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))),
 		irh.setExpires(lastmodified),
-		irh.ctx.Value(echo.HeaderXRequestID).(string),
+		irh.ctx.Value(requestid.GetRequestIDKey()).(string),
 	)
 	c.Response().Header().Set(echo.HeaderContentType, cachedcontent.GetContentType())
 	c.Response().WriteHeader(http.StatusOK)
@@ -283,7 +283,7 @@ func (irh ImageReductionHandler) setOptionValueInt(formvalue string, err error) 
 	val, err := strconv.Atoi(formvalue)
 	if err != nil {
 		log.Warn(irh.ctx, err)
-		err = errors.New("Invalid parameter")
+		err = errors.New("invalid parameter")
 	}
 	return val, err
 }
@@ -298,7 +298,7 @@ func (irh ImageReductionHandler) setOptionValueFloat(formvalue string, err error
 	val, err := strconv.ParseFloat(formvalue, 64)
 	if err != nil {
 		log.Warn(irh.ctx, err)
-		err = errors.New("Invalid parameter")
+		err = errors.New("invalid parameter")
 	}
 	return val, err
 }
@@ -319,7 +319,7 @@ func (irh ImageReductionHandler) getCropParam(cropparam string, err error) ([4]i
 		intcrop, err := strconv.Atoi(crop)
 		if err != nil {
 			log.Warn(irh.ctx, err)
-			err = errors.New("Invalid crop parameter")
+			err = errors.New("invalid crop parameter")
 			return [4]int{}, err
 		}
 		intslicecrops = append(intslicecrops, intcrop)

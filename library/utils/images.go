@@ -4,13 +4,18 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-	"os"
 )
 
-//GetContentTypeByReadSeeker is get content type by Readseeker
-func GetContentTypeByReadSeeker(reader io.ReadSeeker) string {
-	reader.Seek(0, os.SEEK_SET)
+// GetContentTypeByReadSeeker is get content type by Readseeker
+func GetContentTypeByReadSeeker(reader io.ReadSeeker) (string, error) {
+	_, err := reader.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", err
+	}
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(reader)
-	return http.DetectContentType(buf.Bytes())
+	_, err = buf.ReadFrom(reader)
+	if err != nil {
+		return "", err
+	}
+	return http.DetectContentType(buf.Bytes()), nil
 }

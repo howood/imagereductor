@@ -44,6 +44,8 @@ func (cu CacheUsecase) SetCache(mimetype string, data []byte, requesturi string,
 		log.Error(cu.Ctx, err)
 	} else {
 		cacheAssessor := cacheservice.NewCacheAssessor(cu.Ctx, cacheservice.GetCachedDB())
-		cacheAssessor.Set(requesturi, encodedcached, cacheservice.GetChacheExpired())
+		if setErr := cacheAssessor.Set(requesturi, encodedcached, cacheservice.GetChacheExpired()); setErr != nil {
+			log.Error(cu.Ctx, setErr)
+		}
 	}
 }

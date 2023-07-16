@@ -43,13 +43,13 @@ func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *Redi
 	log.Debug(ctx, redisdb)
 	log.Debug(ctx, redisConnectionMap)
 	var connectionkey int
-	if connectionpersistent == true {
+	if connectionpersistent {
 		connectionkey = redisdb
 	} else {
-		rand.Seed(time.Now().UnixNano())
+		rand.NewSource(time.Now().UnixNano())
 		connectionkey = rand.Intn(RedisConnectionRandmax)
 	}
-	if redisConnectionMap[connectionkey] == nil || checkConnect(ctx, connectionkey) == false {
+	if redisConnectionMap[connectionkey] == nil || !checkConnect(ctx, connectionkey) {
 		log.Info(ctx, "--- Create Redis Connection ---  ")
 		if err := createNewConnect(ctx, redisdb, connectionkey); err != nil {
 			panic(err)
@@ -112,7 +112,7 @@ func (i *RedisInstance) DelBulk(key string) error {
 
 // CloseConnect close connection
 func (i *RedisInstance) CloseConnect() error {
-	if i.ConnectionPersistent == false {
+	if !i.ConnectionPersistent {
 		err := i.client.Close()
 		delete(redisConnectionMap, i.connectionkey)
 		return err

@@ -93,7 +93,7 @@ func (im *ImageOperator) Process() error {
 		}
 		im.calcResizeXY()
 		return im.resize()
-	case (reflect.DeepEqual(im.option.Crop, [4]int{}) == false):
+	case !reflect.DeepEqual(im.option.Crop, [4]int{}):
 		im.calcResizeXYWithCrop()
 		return im.cropAndResize()
 	default:
