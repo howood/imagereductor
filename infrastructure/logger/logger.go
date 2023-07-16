@@ -54,47 +54,47 @@ func init() {
 // Debug log output with DEBUG
 func Debug(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
 	log.Debug("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
 // Info log output with Info
 func Info(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
 	log.Info("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
 // Warn log output with Warn
 func Warn(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
 	log.Warn("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
 // Error log output with Error
 func Error(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
 	log.Error("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
 // Panic log output with Panic
 func Panic(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
 	log.Panic("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
 // Fatal log output with Fatal
 func Fatal(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.KeyRequestID))
+	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
 	log.Fatal("["+filename+":"+strconv.Itoa(line)+"] ", msg)
 }
 
 // Format is formatted log output
 func (f *PlainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+	timestamp := entry.Time.Format(f.TimestampFormat)
 	return []byte(fmt.Sprintf("[%s] [%s] [%s] [%s] %s \n", timestamp, f.LevelDesc[entry.Level], packegeName, entry.Data[requestid.KeyRequestID], entry.Message)), nil
 }

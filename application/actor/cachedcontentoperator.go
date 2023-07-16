@@ -2,7 +2,6 @@ package actor
 
 import (
 	"bytes"
-	"context"
 	"encoding/gob"
 
 	"github.com/howood/imagereductor/domain/entity"
@@ -12,7 +11,6 @@ import (
 // CachedContentOperator struct
 type CachedContentOperator struct {
 	chachedData entity.CachedContent
-	ctx         context.Context
 }
 
 // NewCachedContentOperator creates a new CachedContentRepository
@@ -20,7 +18,7 @@ func NewCachedContentOperator() repository.CachedContentRepository {
 	return &CachedContentOperator{}
 }
 
-//Set sets contentType,lastModified and  content to  cahced content
+// Set sets contentType,lastModified and  content to  cahced content
 func (e *CachedContentOperator) Set(contentType, lastModified string, content []byte) {
 	e.chachedData.ContentType = contentType
 	e.chachedData.LastModified = lastModified

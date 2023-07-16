@@ -59,7 +59,7 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 	if err != nil {
 		return errors.New(err.Error())
 	}
-	if utils.StringArrayContains(val.imagetype, format) == false {
+	if !utils.StringArrayContains(val.imagetype, format) {
 		return fmt.Errorf("Invalid Image type: %s", strings.Join(val.imagetype, "/"))
 	}
 	sizeerrormsg := make([]string, 0)
@@ -70,7 +70,9 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 		sizeerrormsg = append(sizeerrormsg, fmt.Sprintf("Over Image height: %d px", val.maxheight))
 	}
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(uploadfile)
+	if _, err := buf.ReadFrom(uploadfile); err != nil {
+		return err
+	}
 	log.Debug(val.ctx, val.maxfilesize)
 	log.Debug(val.ctx, float64(val.maxfilesize)/1024/1024, 2)
 	log.Debug(val.ctx, utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2))
@@ -86,7 +88,7 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 func (val *ImageValidator) convertImageType() {
 	replacelist := make([]string, 0)
 	for _, imagetype := range val.imagetype {
-		if utils.StringArrayContains(ImageTypeList, imagetype) == true {
+		if utils.StringArrayContains(ImageTypeList, imagetype) {
 			replacelist = append(replacelist, imagetype)
 		}
 	}

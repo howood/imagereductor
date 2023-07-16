@@ -40,7 +40,11 @@ func NewCacheAssessor(ctx context.Context, db int) *CacheAssessor {
 
 // Get returns cache contents
 func (ca *CacheAssessor) Get(index string) (interface{}, bool) {
-	defer ca.instance.CloseConnect()
+	defer func() {
+		if r := ca.instance.CloseConnect(); r != nil {
+			return
+		}
+	}()
 	cachedvalue, cachedfound := ca.instance.Get(index)
 	if cachedfound {
 		return cachedvalue, true
@@ -50,13 +54,21 @@ func (ca *CacheAssessor) Get(index string) (interface{}, bool) {
 
 // Set puts cache contents
 func (ca *CacheAssessor) Set(index string, value interface{}, expired time.Duration) error {
-	defer ca.instance.CloseConnect()
+	defer func() {
+		if r := ca.instance.CloseConnect(); r != nil {
+			return
+		}
+	}()
 	return ca.instance.Set(index, value, expired*time.Second)
 }
 
 // Delete remove cache contents
 func (ca *CacheAssessor) Delete(index string) error {
-	defer ca.instance.CloseConnect()
+	defer func() {
+		if r := ca.instance.CloseConnect(); r != nil {
+			return
+		}
+	}()
 	return ca.instance.Del(index)
 }
 

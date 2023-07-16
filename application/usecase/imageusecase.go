@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"mime/multipart"
-	"os"
 	"reflect"
 
 	"github.com/howood/imagereductor/application/actor"
@@ -26,7 +25,7 @@ func (iu ImageUsecase) GetImage(imageoption actor.ImageOperatorOption, storageKe
 		return contenttype, imagebyte, err
 	}
 	// resizing image
-	if reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) == false {
+	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
 		imageOperator := actor.NewImageOperator(
 			iu.Ctx,
 			contenttype,
@@ -70,15 +69,17 @@ func (iu ImageUsecase) GetFileInfo(storageKeyValue string) (objectInfo entity.St
 }
 
 func (iu ImageUsecase) ConvertImage(imageoption actor.ImageOperatorOption, reader multipart.File) (convertedimagebyte []byte, err error) {
-	if reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) == false {
-		contenttype := utils.GetContentTypeByReadSeeker(reader.(io.ReadSeeker))
+	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
+		contenttype, _ := utils.GetContentTypeByReadSeeker(reader.(io.ReadSeeker))
 		imageOperator := actor.NewImageOperator(
 			iu.Ctx,
 			contenttype,
 			imageoption,
 		)
-		reader.Seek(0, os.SEEK_SET)
-		err = imageOperator.Decode(reader)
+		_, err = reader.Seek(0, io.SeekStart)
+		if err == nil {
+			err = imageOperator.Decode(reader)
+		}
 		if err == nil {
 			err = imageOperator.Process()
 		}
@@ -94,6 +95,8 @@ func (iu ImageUsecase) UploadToStorage(FormKeyPath string, reader multipart.File
 	if imagebyte != nil {
 		return cloudstorageassessor.Put(FormKeyPath, bytes.NewReader(imagebyte))
 	}
-	reader.Seek(0, os.SEEK_SET)
+	if _, err := reader.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 	return cloudstorageassessor.Put(FormKeyPath, reader.(io.ReadSeeker))
 }

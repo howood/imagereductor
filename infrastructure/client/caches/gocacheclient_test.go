@@ -11,7 +11,9 @@ func Test_GoCacheClient(t *testing.T) {
 	setkey := "testkey"
 	setdata := "setdata"
 	client := NewGoCacheClient(context.Background())
-	client.Set(setkey, setdata, 60*time.Second)
+	if err := client.Set(setkey, setdata, 60*time.Second); err != nil {
+		t.Fatal(err)
+	}
 	getdata, ok := client.Get(setkey)
 	if !ok {
 		t.Fatalf("failed to get cache")
