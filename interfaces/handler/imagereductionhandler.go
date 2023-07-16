@@ -90,7 +90,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 		irh.setNewLatsModified(),
 		fmt.Sprintf("%d", len(string(filebyte))),
 		"",
-		irh.ctx.Value(requestid.GetRequestIDKey()).(string),
+		fmt.Sprintf("%v", irh.ctx.Value(requestid.GetRequestIDKey())),
 	)
 	return c.Blob(http.StatusOK, contenttype, filebyte)
 }
@@ -118,7 +118,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 		irh.setNewLatsModified(),
 		fmt.Sprintf("%d", contentLength),
 		"",
-		irh.ctx.Value(requestid.GetRequestIDKey()).(string),
+		fmt.Sprintf("%v", irh.ctx.Value(requestid.GetRequestIDKey())),
 	)
 	c.Response().Header().Set(echo.HeaderContentType, contenttype)
 	c.Response().WriteHeader(http.StatusOK)
@@ -244,7 +244,7 @@ func (irh ImageReductionHandler) getCache(c echo.Context, requesturi string) boo
 		cachedcontent.GetLastModified(),
 		fmt.Sprintf("%d", len(string(cachedcontent.GetContent()))),
 		irh.setExpires(lastmodified),
-		irh.ctx.Value(requestid.GetRequestIDKey()).(string),
+		fmt.Sprintf("%v", irh.ctx.Value(requestid.GetRequestIDKey())),
 	)
 	c.Response().Header().Set(echo.HeaderContentType, cachedcontent.GetContentType())
 	c.Response().WriteHeader(http.StatusOK)
