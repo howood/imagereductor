@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/howood/imagereductor/application/actor/storageservice"
+	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/library/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -25,7 +26,7 @@ func (bh BaseHandler) errorResponse(c echo.Context, statudcode int, err error) e
 	if strings.Contains(strings.ToLower(err.Error()), storageservice.RecordNotFoundMsg) {
 		statudcode = http.StatusNotFound
 	}
-	c.Response().Header().Set(echo.HeaderXRequestID, fmt.Sprintf("%v", bh.ctx.Value(echo.HeaderXRequestID)))
+	c.Response().Header().Set(echo.HeaderXRequestID, fmt.Sprintf("%v", bh.ctx.Value(requestid.GetRequestIDKey())))
 	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, marshalIndent)
 }
 
