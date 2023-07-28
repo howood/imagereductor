@@ -25,7 +25,7 @@ func (bh BaseHandler) errorResponse(c echo.Context, statudcode int, err error) e
 	if strings.Contains(strings.ToLower(err.Error()), storageservice.RecordNotFoundMsg) {
 		statudcode = http.StatusNotFound
 	}
-	c.Response().Header().Set(echo.HeaderXRequestID, bh.ctx.Value(echo.HeaderXRequestID).(string))
+	c.Response().Header().Set(echo.HeaderXRequestID, fmt.Sprintf("%v", bh.ctx.Value(echo.HeaderXRequestID)))
 	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, marshalIndent)
 }
 
