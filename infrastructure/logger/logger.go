@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/howood/imagereductor/infrastructure/requestid"
-	"github.com/mattn/go-colorable"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const packegeName = "imagereductor"
@@ -19,82 +19,84 @@ const (
 	logModeMedium = "minimum"
 )
 
-var log *logrus.Entry
-
-// PlainFormatter struct
-type PlainFormatter struct {
-	TimestampFormat string
-	LevelDesc       []string
-}
+var log *zap.Logger
 
 func init() {
-	plainFormatter := new(PlainFormatter)
-	plainFormatter.TimestampFormat = "2006-01-02 15:04:05.999+00:00"
-	plainFormatter.LevelDesc = []string{"PANC", "FATAL", "ERROR", "WARN", "INFO", "DEBUG"}
-	logrus.SetFormatter(plainFormatter)
-
-	logrus.SetOutput(colorable.NewColorableStdout())
-
-	if os.Getenv("VERIFY_MODE") == "enable" {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
+	level := zap.DebugLevel
+	if os.Getenv("VERIFY_MODE") != "enable" {
 		switch os.Getenv("LOG_MODE") {
 		case logModeFew:
-			logrus.SetLevel(logrus.WarnLevel)
+			level = zap.WarnLevel
 		case logModeMedium:
-			logrus.SetLevel(logrus.ErrorLevel)
+			level = zap.ErrorLevel
 		default:
-			logrus.SetLevel(logrus.InfoLevel)
+			level = zap.InfoLevel
 		}
 	}
-
-	log = logrus.WithFields(logrus.Fields{})
+	conf := zap.Config{
+		Level:       zap.NewAtomicLevelAt(level),
+		Development: false,
+		Encoding:    "json",
+		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey:        "timestamp",
+			LevelKey:       "level",
+			NameKey:        "name",
+			CallerKey:      "caller",
+			MessageKey:     "msg",
+			StacktraceKey:  "stacktrace",
+			EncodeLevel:    zapcore.CapitalLevelEncoder,
+			EncodeTime:     zapcore.ISO8601TimeEncoder,
+			EncodeDuration: zapcore.StringDurationEncoder,
+			EncodeCaller:   zapcore.ShortCallerEncoder,
+		},
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	var err error
+	log, err = conf.Build()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Debug log output with DEBUG
 func Debug(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
-	log.Debug("["+filename+":"+strconv.Itoa(line)+"] ", msg)
+	file := filename + ":" + strconv.Itoa(line)
+	log.Debug(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
 }
 
 // Info log output with Info
 func Info(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
-	log.Info("["+filename+":"+strconv.Itoa(line)+"] ", msg)
+	file := filename + ":" + strconv.Itoa(line)
+	log.Info(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
 }
 
 // Warn log output with Warn
 func Warn(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
-	log.Warn("["+filename+":"+strconv.Itoa(line)+"] ", msg)
+	file := filename + ":" + strconv.Itoa(line)
+	log.Warn(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
 }
 
 // Error log output with Error
 func Error(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
-	log.Error("["+filename+":"+strconv.Itoa(line)+"] ", msg)
+	file := filename + ":" + strconv.Itoa(line)
+	log.Error(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
 }
 
 // Panic log output with Panic
 func Panic(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
-	log.Panic("["+filename+":"+strconv.Itoa(line)+"] ", msg)
+	file := filename + ":" + strconv.Itoa(line)
+	log.Panic(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
 }
 
 // Fatal log output with Fatal
 func Fatal(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
-	log = logrus.WithField(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey()))
-	log.Fatal("["+filename+":"+strconv.Itoa(line)+"] ", msg)
-}
-
-// Format is formatted log output
-func (f *PlainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := entry.Time.Format(f.TimestampFormat)
-	return []byte(fmt.Sprintf("[%s] [%s] [%s] [%s] %s \n", timestamp, f.LevelDesc[entry.Level], packegeName, entry.Data[requestid.KeyRequestID], entry.Message)), nil
+	file := filename + ":" + strconv.Itoa(line)
+	log.Fatal(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
 }
