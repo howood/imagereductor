@@ -63,40 +63,53 @@ func init() {
 func Debug(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
-	log.Debug(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
+	log.Debug(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Info log output with Info
 func Info(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
-	log.Info(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
+	log.Info(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Warn log output with Warn
 func Warn(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
-	log.Warn(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
+	log.Warn(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Error log output with Error
 func Error(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
-	log.Error(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
+	log.Error(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Panic log output with Panic
 func Panic(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
-	log.Panic(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
+	log.Panic(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Fatal log output with Fatal
 func Fatal(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
-	log.Fatal(fmt.Sprintf("%v", msg[0]), zap.String("file", file), zap.String("PackegeName", packegeName), zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())), zap.Any("messages", msg))
+	log.Fatal(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
+}
+
+func metadataFields(ctx context.Context, file string, msgs []interface{}) []zap.Field {
+	messages := make([]interface{}, 0)
+	if len(msgs) > 1 {
+		messages = msgs[1:]
+	}
+	return []zap.Field{
+		zap.String("PackegeName", packegeName),
+		zap.String("file", file),
+		zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())),
+		zap.Any("messages", messages),
+	}
 }
