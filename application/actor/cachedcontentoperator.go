@@ -10,38 +10,43 @@ import (
 
 // CachedContentOperator struct
 type CachedContentOperator struct {
-	chachedData entity.CachedContent
+	repository.CachedContentRepository
 }
 
 // NewCachedContentOperator creates a new CachedContentRepository
-func NewCachedContentOperator() repository.CachedContentRepository {
-	return &CachedContentOperator{}
+func NewCachedContentOperator() *CachedContentOperator {
+	return &CachedContentOperator{&cachedContentCreator{}}
+}
+
+// cachedContentCreator struct
+type cachedContentCreator struct {
+	chachedData entity.CachedContent
 }
 
 // Set sets contentType,lastModified and  content to  cahced content
-func (e *CachedContentOperator) Set(contentType, lastModified string, content []byte) {
+func (e *cachedContentCreator) Set(contentType, lastModified string, content []byte) {
 	e.chachedData.ContentType = contentType
 	e.chachedData.LastModified = lastModified
 	e.chachedData.Content = content
 }
 
 // GetContentType returns contenttype of cahced content
-func (e *CachedContentOperator) GetContentType() string {
+func (e *cachedContentCreator) GetContentType() string {
 	return e.chachedData.ContentType
 }
 
 // GetLastModified returns lastmodified of cahced content
-func (e *CachedContentOperator) GetLastModified() string {
+func (e *cachedContentCreator) GetLastModified() string {
 	return e.chachedData.LastModified
 }
 
 // GetContent returns content of cahced content
-func (e *CachedContentOperator) GetContent() []byte {
+func (e *cachedContentCreator) GetContent() []byte {
 	return e.chachedData.Content
 }
 
 // GobEncode serialized cached data to bytes
-func (e *CachedContentOperator) GobEncode() ([]byte, error) {
+func (e *cachedContentCreator) GobEncode() ([]byte, error) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 
@@ -58,7 +63,7 @@ func (e *CachedContentOperator) GobEncode() ([]byte, error) {
 }
 
 // GobDecode decode bytes to cached data
-func (e *CachedContentOperator) GobDecode(buf []byte) error {
+func (e *cachedContentCreator) GobDecode(buf []byte) error {
 	r := bytes.NewBuffer(buf)
 	decoder := gob.NewDecoder(r)
 
