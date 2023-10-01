@@ -16,6 +16,6 @@ testv:
 	export GO111MODULE=on && go test ./... -v
 
 lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.53.3 &&  \
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.54.2 &&  \
 	cd /go/src/github.com/howood/imagereductor &&  \
 	./bin/golangci-lint run ./...

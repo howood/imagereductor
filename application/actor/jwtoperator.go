@@ -19,26 +19,33 @@ var TokenSecret = os.Getenv("TOKEN_SECRET")
 
 // JwtOperator struct
 type JwtOperator struct {
+	repository.JwtClaimsRepository
+}
+
+// NewJwtOperator creates a new JwtClaimsRepository
+func NewJwtOperator(ctx context.Context, username string, admin bool, expired time.Duration) *JwtOperator {
+	return &JwtOperator{
+		&jwtCreator{
+			jwtClaims: &entity.JwtClaims{
+				Name:  username,
+				Admin: admin,
+				RegisteredClaims: jwt.RegisteredClaims{
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * expired)),
+				},
+			},
+			ctx: ctx,
+		},
+	}
+}
+
+// jwtCreator struct
+type jwtCreator struct {
 	jwtClaims *entity.JwtClaims
 	ctx       context.Context
 }
 
-// NewJwtOperator creates a new JwtClaimsRepository
-func NewJwtOperator(ctx context.Context, username string, admin bool, expired time.Duration) repository.JwtClaimsRepository {
-	return &JwtOperator{
-		jwtClaims: &entity.JwtClaims{
-			Name:  username,
-			Admin: admin,
-			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * expired)),
-			},
-		},
-		ctx: ctx,
-	}
-}
-
 // CreateToken creates a new token
-func (jc *JwtOperator) CreateToken(secret string) string {
+func (jc *jwtCreator) CreateToken(secret string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jc.jwtClaims)
 	tokenstring, err := token.SignedString([]byte(secret))
 	if err != nil {
