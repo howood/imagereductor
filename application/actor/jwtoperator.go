@@ -2,20 +2,21 @@ package actor
 
 import (
 	"context"
-	"os"
+	"strconv"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/domain/repository"
 	log "github.com/howood/imagereductor/infrastructure/logger"
+	"github.com/howood/imagereductor/library/utils"
 )
 
 // TokenExpired is token's expired
-const TokenExpired = 60
+var TokenExpired = utils.GetOsEnv("TOKEN_EXPIED", "3600")
 
 // TokenSecret define token secrets
-var TokenSecret = os.Getenv("TOKEN_SECRET")
+var TokenSecret = utils.GetOsEnv("TOKEN_SECRET", "secretsecretdsfdsfsdfdsfsdf")
 
 // JwtOperator struct
 type JwtOperator struct {
@@ -23,14 +24,15 @@ type JwtOperator struct {
 }
 
 // NewJwtOperator creates a new JwtClaimsRepository
-func NewJwtOperator(ctx context.Context, username string, admin bool, expired time.Duration) *JwtOperator {
+func NewJwtOperator(ctx context.Context, username string, admin bool) *JwtOperator {
+	expired, _ := strconv.ParseInt(TokenExpired, 10, 64)
 	return &JwtOperator{
 		&jwtCreator{
 			jwtClaims: &entity.JwtClaims{
 				Name:  username,
 				Admin: admin,
 				RegisteredClaims: jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * expired)),
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(expired))),
 				},
 			},
 			ctx: ctx,
