@@ -12,11 +12,11 @@ import (
 	"github.com/howood/imagereductor/library/utils"
 )
 
-// TokenExpired is token's expired
-var TokenExpired = utils.GetOsEnv("TOKEN_EXPIED", "3600")
+// tokenExpired is token's expired
+var tokenExpired = utils.GetOsEnv("TOKEN_EXPIED", "3600")
 
-// TokenSecret define token secrets
-var TokenSecret = utils.GetOsEnv("TOKEN_SECRET", "secretsecretdsfdsfsdfdsfsdf")
+// tokenSecret define token secrets
+var tokenSecret = utils.GetOsEnv("TOKEN_SECRET", "secretsecretdsfdsfsdfdsfsdf")
 
 // JwtOperator struct
 type JwtOperator struct {
@@ -47,9 +47,9 @@ type jwtCreator struct {
 }
 
 // CreateToken creates a new token
-func (jc *jwtCreator) CreateToken(secret string) string {
+func (jc *jwtCreator) CreateToken() string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jc.jwtClaims)
-	tokenstring, err := token.SignedString([]byte(secret))
+	tokenstring, err := token.SignedString([]byte(tokenSecret))
 	if err != nil {
 		log.Error(jc.ctx, err.Error())
 	}
