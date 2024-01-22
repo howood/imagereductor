@@ -19,7 +19,7 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 * w : 500 (px)  | risizeing width with original aspect ratio
 * h : 500 (px) | risizeing height with original aspect ratio
 * q : 1 ~ 4      | change image quality
-* rotate : right,left,upsidedown,autovertical,autohorizontal  | auto... are rotate image auto vertical / horizontal position
+* rotate : right,left,upsidedown,autovertical,autohorizontal, exiforientation  | auto... are rotate image auto vertical / horizontal position, exiforientation is analyzing exif orientation setting
 * crop : 111,222,333,444 (from point x/y - to point x/y)
 * bri : 0 ~ 100   | change image brightness
 * cont : -100 ~ 100   | change image contrast
@@ -32,6 +32,7 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 * uploadfile : filepath
 
 ## Endpoint
+
 | Method        | endpoint          | usage          |
 | --------------- |---------------|---------------|
 | GET | / | Get image file using query options |
