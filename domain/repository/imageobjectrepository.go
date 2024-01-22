@@ -4,7 +4,7 @@ import "io"
 
 // ImageObjectRepository interface
 type ImageObjectRepository interface {
-	Decode(src io.Reader) error
+	Decode(src io.ReadSeeker) error
 	Process() error
 	ImageByte() ([]byte, error)
 }

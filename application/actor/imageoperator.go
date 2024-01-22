@@ -18,6 +18,7 @@ import (
 	"github.com/howood/imagereductor/domain/repository"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/library/utils"
+	"github.com/rwcarlsen/goexif/exif"
 	"golang.org/x/image/draw"
 	"golang.org/x/image/math/f64"
 )
@@ -33,6 +34,8 @@ const (
 	ImageRotateAutoVertical = "autovertical"
 	// ImageRotateAutoHorizontal is rotate image auto horizontal
 	ImageRotateAutoHorizontal = "autohorizontal"
+	// ImageRotateExifOrientation is rotate image by exif orientation
+	ImageRotateExifOrientation = "exiforientation"
 )
 
 // ImageOperator struct
@@ -56,9 +59,10 @@ func NewImageOperator(ctx context.Context, contenttype string, option ImageOpera
 
 // imageCreator struct
 type imageCreator struct {
-	object *entity.ImageObject
-	option *entity.ImageObjectOption
-	ctx    context.Context
+	object          *entity.ImageObject
+	option          *entity.ImageObjectOption
+	exifOrientation int
+	ctx             context.Context
 }
 
 // ImageOperatorOption is Option of ImageOperator struct
@@ -69,9 +73,12 @@ type subImager interface {
 }
 
 // Decode images
-func (im *imageCreator) Decode(src io.Reader) error {
+func (im *imageCreator) Decode(src io.ReadSeeker) error {
 	var err error
 	im.object.Source, im.object.ImageName, err = image.Decode(src)
+	if err == nil {
+		im.decodeExifOrientation(src)
+	}
 	if err == nil {
 		rectang := im.object.Source.Bounds()
 		im.object.OriginX = rectang.Bounds().Dx()
@@ -155,6 +162,23 @@ func (im *imageCreator) rotate() error {
 		}
 	case ImageRotateAutoHorizontal:
 		if im.object.OriginY > im.object.OriginX {
+			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
+			im.object.OriginX = originY
+			im.object.OriginY = originX
+		}
+	case ImageRotateExifOrientation:
+		if im.exifOrientation == 3 {
+			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(180.0, 0, float64(im.object.OriginX)), im.getDrawer())
+		}
+		if im.exifOrientation == 6 {
+			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, 0, float64(im.object.OriginX)), im.getDrawer())
+			im.object.OriginX = originY
+			im.object.OriginY = originX
+		}
+		if im.exifOrientation == 8 {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
 			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
 			im.object.OriginX = originY
@@ -361,4 +385,28 @@ func (im *imageCreator) jpegOption() *jpeg.Options {
 	default:
 		return &jpeg.Options{Quality: 85}
 	}
+}
+
+func (im *imageCreator) decodeExifOrientation(src io.ReadSeeker) {
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		log.Debug(im.ctx, fmt.Sprintf("reader seek 0 error %v", err.Error()))
+		return
+	}
+	decodedExif, err := exif.Decode(src)
+	if err != nil {
+		log.Debug(im.ctx, fmt.Sprintf("exif decode error %v", err.Error()))
+		return
+	}
+	orientation, err := decodedExif.Get(exif.Orientation)
+	if err != nil {
+		log.Debug(im.ctx, fmt.Sprintf("exif orientation error %v", err.Error()))
+		return
+	}
+	orientationvVal, err := orientation.Int(0)
+	if err != nil {
+		log.Debug(im.ctx, fmt.Sprintf("exif orientation int error %v", err.Error()))
+		return
+	}
+	im.exifOrientation = orientationvVal
+	log.Debug(im.ctx, fmt.Sprintf("exif orientation %v", im.exifOrientation))
 }

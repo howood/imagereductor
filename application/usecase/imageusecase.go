@@ -31,7 +31,7 @@ func (iu ImageUsecase) GetImage(imageoption actor.ImageOperatorOption, storageKe
 			contenttype,
 			imageoption,
 		)
-		err = imageOperator.Decode(bytes.NewBuffer(imagebyte))
+		err = imageOperator.Decode(bytes.NewReader(imagebyte))
 		if err == nil {
 			err = imageOperator.Process()
 		}
