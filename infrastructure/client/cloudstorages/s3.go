@@ -1,34 +1,33 @@
 package cloudstorages
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	extramimetype "github.com/gabriel-vasile/mimetype"
-	"golang.org/x/net/context"
-
-	"bytes"
-	"io"
-	"net/http"
-	"os"
-
 	"github.com/howood/imagereductor/domain/entity"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
-// S3BucketUploadfiles is bucket to upload
+// S3BucketUploadfiles is bucket to upload.
+//
+//nolint:gochecknoglobals
 var S3BucketUploadfiles = os.Getenv("AWS_S3_BUKET")
 
-// S3Instance struct
+// S3Instance struct.
 type S3Instance struct {
 	client *s3.S3
-	ctx    context.Context
 }
 
-// NewS3 creates a new S3Instance
+// NewS3 creates a new S3Instance.
 func NewS3(ctx context.Context) *S3Instance {
 	log.Debug(ctx, "----S3 DNS----")
 	log.Debug(ctx, os.Getenv("AWS_S3_REGION"))
@@ -50,7 +49,6 @@ func NewS3(ctx context.Context) *S3Instance {
 				DisableSSL:       aws.Bool(true),
 				S3ForcePathStyle: aws.Bool(true),
 			}),
-			ctx: ctx,
 		}
 	} else {
 		I = &S3Instance{
@@ -58,31 +56,30 @@ func NewS3(ctx context.Context) *S3Instance {
 				Region:      aws.String(os.Getenv("AWS_S3_REGION")),
 				Credentials: cred,
 			}),
-			ctx: ctx,
 		}
 	}
-	I.init()
+	I.init(ctx)
 	return I
 }
 
-func (s3instance *S3Instance) init() {
+func (s3instance *S3Instance) init(ctx context.Context) {
 	if _, bucketerr := s3instance.client.HeadBucket(&s3.HeadBucketInput{Bucket: aws.String(S3BucketUploadfiles)}); bucketerr != nil {
 		if result, err := s3instance.client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(S3BucketUploadfiles)}); err != nil {
-			log.Debug(s3instance.ctx, "***CreateError****")
-			log.Debug(s3instance.ctx, err)
-			log.Debug(s3instance.ctx, result)
+			log.Debug(ctx, "***CreateError****")
+			log.Debug(ctx, err)
+			log.Debug(ctx, result)
 		}
 	}
 }
 
-// Put puts to storage
-func (s3instance *S3Instance) Put(bucket string, path string, file io.ReadSeeker) error {
-	//ファイルのオフセットを先頭に戻す
+// Put puts to storage.
+func (s3instance *S3Instance) Put(ctx context.Context, bucket string, path string, file io.ReadSeeker) error {
+	// ファイルのオフセットを先頭に戻す
 	_, err := file.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
-	mimetype, errfile := s3instance.getContentType(file)
+	mimetype, errfile := s3instance.getContentType(ctx, file)
 	if errfile != nil {
 		return errfile
 	}
@@ -96,19 +93,18 @@ func (s3instance *S3Instance) Put(bucket string, path string, file io.ReadSeeker
 		Body:        file,
 		ContentType: aws.String(mimetype),
 	})
-	log.Debug(s3instance.ctx, result)
+	log.Debug(ctx, result)
 	return err
 }
 
-// Get gets from storage
-func (s3instance *S3Instance) Get(bucket string, key string) (string, []byte, error) {
-	log.Debug(s3instance.ctx, bucket)
-	log.Debug(s3instance.ctx, key)
+// Get gets from storage.
+func (s3instance *S3Instance) Get(ctx context.Context, bucket string, key string) (string, []byte, error) {
+	log.Debug(ctx, bucket)
+	log.Debug(ctx, key)
 	response, err := s3instance.client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
-
 	if err != nil {
 		return "", nil, err
 	}
@@ -119,37 +115,35 @@ func (s3instance *S3Instance) Get(bucket string, key string) (string, []byte, er
 	if _, err := io.Copy(buf, response.Body); err != nil {
 		return "", nil, err
 	}
-	log.Debug(s3instance.ctx, contenttype)
+	log.Debug(ctx, contenttype)
 	return contenttype, buf.Bytes(), nil
 }
 
-// GetByStreaming gets from storage by streaming
-func (s3instance *S3Instance) GetByStreaming(bucket string, key string) (string, io.ReadCloser, error) {
-	log.Debug(s3instance.ctx, bucket)
-	log.Debug(s3instance.ctx, key)
+// GetByStreaming gets from storage by streaming.
+func (s3instance *S3Instance) GetByStreaming(ctx context.Context, bucket string, key string) (string, io.ReadCloser, error) {
+	log.Debug(ctx, bucket)
+	log.Debug(ctx, key)
 	response, err := s3instance.client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
-
 	if err != nil {
 		return "", nil, err
 	}
 	contenttype := *response.ContentType
-	log.Debug(s3instance.ctx, contenttype)
+	log.Debug(ctx, contenttype)
 	return contenttype, response.Body, nil
 }
 
-// GetObjectInfo gets from storage
-func (s3instance *S3Instance) GetObjectInfo(bucket string, key string) (entity.StorageObjectInfo, error) {
-	log.Debug(s3instance.ctx, bucket)
-	log.Debug(s3instance.ctx, key)
+// GetObjectInfo gets from storage.
+func (s3instance *S3Instance) GetObjectInfo(ctx context.Context, bucket string, key string) (entity.StorageObjectInfo, error) {
+	log.Debug(ctx, bucket)
+	log.Debug(ctx, key)
 	so := entity.StorageObjectInfo{}
 	response, err := s3instance.client.HeadObject(&s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
-
 	if err != nil {
 		return so, err
 	}
@@ -162,13 +156,14 @@ func (s3instance *S3Instance) GetObjectInfo(bucket string, key string) (entity.S
 	return so, nil
 }
 
-// List get list from storage
-func (s3instance *S3Instance) List(bucket string, key string) ([]string, error) {
-	log.Debug(s3instance.ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))
+// List get list from storage.
+func (s3instance *S3Instance) List(ctx context.Context, bucket string, key string) ([]string, error) {
+	log.Debug(ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))
 	if key[0:1] == "/" {
 		key = key[1:]
 	}
 	var names []string
+	//nolint:revive
 	listgetFn := func(page *s3.ListObjectsV2Output, lastPage bool) bool {
 		for _, obj := range page.Contents {
 			if obj.Key == nil {
@@ -188,22 +183,23 @@ func (s3instance *S3Instance) List(bucket string, key string) ([]string, error) 
 	return names, nil
 }
 
-// Delete deletes from storage
-func (s3instance *S3Instance) Delete(bucket string, key string) error {
+// Delete deletes from storage.
+func (s3instance *S3Instance) Delete(ctx context.Context, bucket string, key string) error {
 	result, err := s3instance.client.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
-	log.Debug(s3instance.ctx, result)
+	log.Debug(ctx, result)
 	return err
 }
 
-func (s3instance *S3Instance) getContentType(out io.ReadSeeker) (string, error) {
+func (s3instance *S3Instance) getContentType(ctx context.Context, out io.ReadSeeker) (string, error) {
+	//nolint:mnd
 	buffer := make([]byte, 512)
 	_, err := out.Read(buffer)
 	if err != nil {
-		log.Warn(s3instance.ctx, "Date Read Error!")
-		log.Warn(s3instance.ctx, err)
+		log.Warn(ctx, "Date Read Error!")
+		log.Warn(ctx, err)
 	}
 	contentType := http.DetectContentType(buffer)
 	if contentType == "" || contentType == mimeOctetStream {
@@ -211,11 +207,10 @@ func (s3instance *S3Instance) getContentType(out io.ReadSeeker) (string, error) 
 			return "", err
 		}
 		if mtype, err := extramimetype.DetectReader(out); err == nil {
-			log.Debug(s3instance.ctx, mtype)
+			log.Debug(ctx, mtype)
 			contentType = mtype.String()
 		}
-
 	}
-	log.Debug(s3instance.ctx, contentType)
+	log.Debug(ctx, contentType)
 	return contentType, nil
 }

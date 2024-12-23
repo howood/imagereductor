@@ -13,90 +13,90 @@ import (
 	"github.com/howood/imagereductor/library/utils"
 )
 
-type ImageUsecase struct {
-	Ctx context.Context
-}
+type ImageUsecase struct{}
 
-func (iu ImageUsecase) GetImage(imageoption actor.ImageOperatorOption, storageKeyValue string) (contenttype string, imagebyte []byte, err error) {
+//nolint:nolintlint,ireturn
+func (iu ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOperatorOption, storageKeyValue string) (string, []byte, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(iu.Ctx)
-	contenttype, imagebyte, err = cloudstorageassessor.Get(storageKeyValue)
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
+	contenttype, imagebyte, err := cloudstorageassessor.Get(ctx, storageKeyValue)
 	if err != nil {
 		return contenttype, imagebyte, err
 	}
 	// resizing image
 	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
 		imageOperator := actor.NewImageOperator(
-			iu.Ctx,
 			contenttype,
 			imageoption,
 		)
-		err = imageOperator.Decode(bytes.NewReader(imagebyte))
+		err = imageOperator.Decode(ctx, bytes.NewReader(imagebyte))
 		if err == nil {
-			err = imageOperator.Process()
+			err = imageOperator.Process(ctx)
 		}
 		if err == nil {
-			imagebyte, err = imageOperator.ImageByte()
+			imagebyte, err = imageOperator.ImageByte(ctx)
 		}
 	}
 	return contenttype, imagebyte, err
 }
 
-func (iu ImageUsecase) GetFile(storageKeyValue string) (contenttype string, filebyte []byte, err error) {
+func (iu ImageUsecase) GetFile(ctx context.Context, storageKeyValue string) (string, []byte, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(iu.Ctx)
-	contenttype, filebyte, err = cloudstorageassessor.Get(storageKeyValue)
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
+	contenttype, filebyte, err := cloudstorageassessor.Get(ctx, storageKeyValue)
 	return contenttype, filebyte, err
 }
 
-func (iu ImageUsecase) GetFileStream(storageKeyValue string) (contenttype string, contentLength int, filebyte io.ReadCloser, err error) {
+func (iu ImageUsecase) GetFileStream(ctx context.Context, storageKeyValue string) (string, int, io.ReadCloser, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(iu.Ctx)
-	objectInfo, err := cloudstorageassessor.GetObjectInfo(storageKeyValue)
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
+	objectInfo, err := cloudstorageassessor.GetObjectInfo(ctx, storageKeyValue)
 	if err != nil {
 		return "", 0, nil, err
 	}
-	contentLength = objectInfo.ContentLength
-	contenttype, response, err := cloudstorageassessor.GetByStreaming(storageKeyValue)
+	contentLength := objectInfo.ContentLength
+	contenttype, response, err := cloudstorageassessor.GetByStreaming(ctx, storageKeyValue)
 	return contenttype, contentLength, response, err
 }
 
-func (iu ImageUsecase) GetFileInfo(storageKeyValue string) (objectInfo entity.StorageObjectInfo, err error) {
+func (iu ImageUsecase) GetFileInfo(ctx context.Context, storageKeyValue string) (entity.StorageObjectInfo, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(iu.Ctx)
-	objectInfo, err = cloudstorageassessor.GetObjectInfo(storageKeyValue)
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
+	objectInfo, err := cloudstorageassessor.GetObjectInfo(ctx, storageKeyValue)
 	return objectInfo, err
 }
 
-func (iu ImageUsecase) ConvertImage(imageoption actor.ImageOperatorOption, reader multipart.File) (convertedimagebyte []byte, err error) {
+func (iu ImageUsecase) ConvertImage(ctx context.Context, imageoption actor.ImageOperatorOption, reader multipart.File) ([]byte, error) {
+	var convertedimagebyte []byte
+	var err error
 	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
 		contenttype, _ := utils.GetContentTypeByReadSeeker(reader.(io.ReadSeeker))
 		imageOperator := actor.NewImageOperator(
-			iu.Ctx,
 			contenttype,
 			imageoption,
 		)
 		_, err = reader.Seek(0, io.SeekStart)
 		if err == nil {
-			err = imageOperator.Decode(reader)
+			err = imageOperator.Decode(ctx, reader)
 		}
 		if err == nil {
-			err = imageOperator.Process()
+			err = imageOperator.Process(ctx)
 		}
 		if err == nil {
-			convertedimagebyte, err = imageOperator.ImageByte()
+			convertedimagebyte, err = imageOperator.ImageByte(ctx)
 		}
 	}
 	return convertedimagebyte, err
 }
 
-func (iu ImageUsecase) UploadToStorage(FormKeyPath string, reader multipart.File, imagebyte []byte) error {
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(iu.Ctx)
+func (iu ImageUsecase) UploadToStorage(ctx context.Context, formKeyPath string, reader multipart.File, imagebyte []byte) error {
+	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
 	if imagebyte != nil {
-		return cloudstorageassessor.Put(FormKeyPath, bytes.NewReader(imagebyte))
+		return cloudstorageassessor.Put(ctx, formKeyPath, bytes.NewReader(imagebyte))
 	}
 	if _, err := reader.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
-	return cloudstorageassessor.Put(FormKeyPath, reader.(io.ReadSeeker))
+	//nolint:forcetypeassert
+	return cloudstorageassessor.Put(ctx, formKeyPath, reader.(io.ReadSeeker))
 }

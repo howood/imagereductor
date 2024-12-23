@@ -10,13 +10,12 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
-type CacheUsecase struct {
-	Ctx context.Context
-}
+type CacheUsecase struct{}
 
-func (cu CacheUsecase) GetCache(requesturi string) (bool, repository.CachedContentRepository, error) {
-	cacheAssessor := cacheservice.NewCacheAssessor(cu.Ctx, cacheservice.GetCachedDB())
-	if cachedvalue, cachedfound := cacheAssessor.Get(requesturi); cachedfound {
+//nolint:ireturn
+func (cu CacheUsecase) GetCache(ctx context.Context, requesturi string) (bool, repository.CachedContentRepository, error) {
+	cacheAssessor := cacheservice.NewCacheAssessor(ctx, cacheservice.GetCachedDB())
+	if cachedvalue, cachedfound := cacheAssessor.Get(ctx, requesturi); cachedfound {
 		cachedcontent := actor.NewCachedContentOperator()
 		var err error
 		switch xi := cachedvalue.(type) {
@@ -25,10 +24,11 @@ func (cu CacheUsecase) GetCache(requesturi string) (bool, repository.CachedConte
 		case string:
 			err = cachedcontent.GobDecode([]byte(xi))
 		default:
+			//nolint:goerr113
 			err = errors.New("get cache error")
 		}
 		if err != nil {
-			log.Error(cu.Ctx, err.Error())
+			log.Error(ctx, err.Error())
 			return true, cachedcontent, err
 		}
 		return true, cachedcontent, err
@@ -36,16 +36,16 @@ func (cu CacheUsecase) GetCache(requesturi string) (bool, repository.CachedConte
 	return false, nil, nil
 }
 
-func (cu CacheUsecase) SetCache(mimetype string, data []byte, requesturi string, latsModified string) {
+func (cu CacheUsecase) SetCache(ctx context.Context, mimetype string, data []byte, requesturi string, latsModified string) {
 	cachedresponse := actor.NewCachedContentOperator()
 	cachedresponse.Set(mimetype, latsModified, data)
 	encodedcached, err := cachedresponse.GobEncode()
 	if err != nil {
-		log.Error(cu.Ctx, err)
+		log.Error(ctx, err)
 	} else {
-		cacheAssessor := cacheservice.NewCacheAssessor(cu.Ctx, cacheservice.GetCachedDB())
-		if setErr := cacheAssessor.Set(requesturi, encodedcached, cacheservice.GetChacheExpired()); setErr != nil {
-			log.Error(cu.Ctx, setErr)
+		cacheAssessor := cacheservice.NewCacheAssessor(ctx, cacheservice.GetCachedDB())
+		if setErr := cacheAssessor.Set(ctx, requesturi, encodedcached, cacheservice.GetChacheExpired()); setErr != nil {
+			log.Error(ctx, setErr)
 		}
 	}
 }

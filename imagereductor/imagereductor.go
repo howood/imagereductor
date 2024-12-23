@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -15,10 +14,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-// DefaultPort is default port of server
-var DefaultPort = utils.GetOsEnv("SERVER_PORT", "8080")
-
 func main() {
+	defaultPort := utils.GetOsEnv("SERVER_PORT", "8080")
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -29,7 +27,7 @@ func main() {
 	}
 	jwtconfig := echojwt.Config{
 		Skipper: custommiddleware.OptionsMethodSkipper,
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+		NewClaimsFunc: func(_ echo.Context) jwt.Claims {
 			return new(entity.JwtClaims)
 		},
 		SigningKey: []byte(actor.TokenSecret),
@@ -41,5 +39,5 @@ func main() {
 	e.GET("/streaming", handler.ImageReductionHandler{}.RequestStreaming)
 	e.GET("/info", handler.ImageReductionHandler{}.RequestInfo)
 
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", DefaultPort)))
+	e.Logger.Fatal(e.Start(":" + defaultPort))
 }

@@ -1,10 +1,13 @@
 package repository
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
-// ImageObjectRepository interface
+// ImageObjectRepository interface.
 type ImageObjectRepository interface {
-	Decode(src io.ReadSeeker) error
-	Process() error
-	ImageByte() ([]byte, error)
+	Decode(ctx context.Context, src io.ReadSeeker) error
+	Process(ctx context.Context) error
+	ImageByte(ctx context.Context) ([]byte, error)
 }

@@ -7,15 +7,15 @@ import (
 )
 
 const (
-	// SegmentioKsuid is type of id
+	// SegmentioKsuid is type of id.
 	SegmentioKsuid = "segmentio_ksuid"
-	// SatoriUUID is type of id
+	// SatoriUUID is type of id.
 	SatoriUUID = "satori_gouuid"
-	// RsXid is type of id
+	// RsXid is type of id.
 	RsXid = "rs_xid"
 )
 
-// GetUUID returns a new uuid
+// GetUUID returns a new uuid.
 func GetUUID(systemuuid string) string {
 	switch systemuuid {
 	case SegmentioKsuid:

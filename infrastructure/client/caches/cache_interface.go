@@ -1,12 +1,15 @@
 package caches
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
-// CacheInstance interface
+// CacheInstance interface.
 type CacheInstance interface {
-	Set(key string, value interface{}, expired time.Duration) error
-	Get(key string) (interface{}, bool)
-	Del(key string) error
-	DelBulk(key string) error
+	Set(ctx context.Context, key string, value interface{}, expired time.Duration) error
+	Get(ctx context.Context, key string) (interface{}, bool)
+	Del(ctx context.Context, key string) error
+	DelBulk(ctx context.Context, key string) error
 	CloseConnect() error
 }

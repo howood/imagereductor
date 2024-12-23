@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// GetOsEnv is get os env with default value
+// GetOsEnv is get os env with default value.
 func GetOsEnv(key, defaultdata string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -13,7 +13,7 @@ func GetOsEnv(key, defaultdata string) string {
 	return defaultdata
 }
 
-// GetOsEnvInt is get os env with default value converting to int
+// GetOsEnvInt is get os env with default value converting to int.
 func GetOsEnvInt(key string, defaultdata int) int {
 	if value, ok := os.LookupEnv(key); ok {
 		if intval, err := strconv.Atoi(value); err == nil {

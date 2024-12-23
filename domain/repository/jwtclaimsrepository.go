@@ -1,6 +1,8 @@
 package repository
 
-// JwtClaimsRepository interface
+import "context"
+
+// JwtClaimsRepository interface.
 type JwtClaimsRepository interface {
-	CreateToken() string
+	CreateToken(ctx context.Context) string
 }

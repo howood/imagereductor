@@ -14,53 +14,56 @@ import (
 )
 
 const (
-	// ImageTypeJpeg is type of Jpeg
+	// ImageTypeJpeg is type of Jpeg.
 	ImageTypeJpeg = "jpeg"
-	// ImageTypeGif is type of Gif
+	// ImageTypeGif is type of Gif.
 	ImageTypeGif = "gif"
-	// ImageTypePng is type of PNG
+	// ImageTypePng is type of PNG.
 	ImageTypePng = "png"
-	// ImageTypeBmp is type of BMP
+	// ImageTypeBmp is type of BMP.
 	ImageTypeBmp = "bmp"
-	// ImageTypeTiff is type of TIFF
+	// ImageTypeTiff is type of TIFF.
 	ImageTypeTiff = "tiff"
 )
 
-// ImageTypeList is list of image types
-var ImageTypeList = []string{ImageTypeJpeg, ImageTypeGif, ImageTypePng, ImageTypeBmp, ImageTypeTiff}
+// imageTypeList is list of image types.
+//
+//nolint:gochecknoglobals
+var imageTypeList = []string{ImageTypeJpeg, ImageTypeGif, ImageTypePng, ImageTypeBmp, ImageTypeTiff}
 
-// ImageValidator struct
+// ImageValidator struct.
 type ImageValidator struct {
 	imagetype   []string
 	maxwidth    int
 	maxheight   int
 	maxfilesize int
-	ctx         context.Context
 }
 
-// NewImageValidator creates a new ImageValidator
-func NewImageValidator(ctx context.Context, imagetype []string, maxwidth, maxheight, maxfilesize int) *ImageValidator {
+// NewImageValidator creates a new ImageValidator.
+func NewImageValidator(imagetype []string, maxwidth, maxheight, maxfilesize int) *ImageValidator {
 	I := &ImageValidator{
 		imagetype:   imagetype,
 		maxwidth:    maxwidth,
 		maxheight:   maxheight,
 		maxfilesize: maxfilesize,
-		ctx:         ctx,
 	}
 	I.convertImageType()
 	return I
 }
 
-// Validate process to validate  uploadfile
-func (val *ImageValidator) Validate(uploadfile io.Reader) error {
+// Validate process to validate  uploadfile.
+//
+//nolint:cyclop
+func (val *ImageValidator) Validate(ctx context.Context, uploadfile io.Reader) error {
 	imageinfo, format, err := image.DecodeConfig(uploadfile)
-	log.Debug(val.ctx, fmt.Sprintf("%#v", imageinfo))
-	log.Debug(val.ctx, format)
+	log.Debug(ctx, fmt.Sprintf("%#v", imageinfo))
+	log.Debug(ctx, format)
 	if err != nil {
-		return errors.New(err.Error())
+		return fmt.Errorf("%w", err)
 	}
+	//nolint:err113
 	if !utils.StringArrayContains(val.imagetype, format) {
-		return fmt.Errorf("Invalid Image type: %s", strings.Join(val.imagetype, "/"))
+		return fmt.Errorf("invalid Image type: %s", strings.Join(val.imagetype, "/"))
 	}
 	sizeerrormsg := make([]string, 0)
 	if val.maxwidth != 0 && imageinfo.Width > val.maxwidth {
@@ -73,13 +76,15 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 	if _, err := buf.ReadFrom(uploadfile); err != nil {
 		return err
 	}
-	log.Debug(val.ctx, val.maxfilesize)
-	log.Debug(val.ctx, float64(val.maxfilesize)/1024/1024, 2)
-	log.Debug(val.ctx, utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2))
+	log.Debug(ctx, val.maxfilesize)
+	log.Debug(ctx, float64(val.maxfilesize)/1024/1024, 2)                   //nolint:mnd
+	log.Debug(ctx, utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2)) //nolint:mnd
 	if val.maxfilesize != 0 && buf.Len() > val.maxfilesize {
+		//nolint:mnd
 		sizeerrormsg = append(sizeerrormsg, fmt.Sprintf("Over Image filesize: %v MB", utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2)))
 	}
 	if len(sizeerrormsg) > 0 {
+		//nolint:err113
 		return errors.New(strings.Join(sizeerrormsg, "/"))
 	}
 	return nil
@@ -88,7 +93,7 @@ func (val *ImageValidator) Validate(uploadfile io.Reader) error {
 func (val *ImageValidator) convertImageType() {
 	replacelist := make([]string, 0)
 	for _, imagetype := range val.imagetype {
-		if utils.StringArrayContains(ImageTypeList, imagetype) {
+		if utils.StringArrayContains(imageTypeList, imagetype) {
 			replacelist = append(replacelist, imagetype)
 		}
 	}
