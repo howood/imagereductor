@@ -25,7 +25,10 @@ jobs:
       run: go build -v ./...
 
     - name: Lint
-      run: make lint
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.62.2 &&  \
+        cd ./imagereductor &&  \
+        ./bin/golangci-lint run ./..
 
     - name: Test
       run: go test -v ./...
