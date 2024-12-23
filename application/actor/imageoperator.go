@@ -24,27 +24,27 @@ import (
 )
 
 const (
-	// ImageRotateRight is rotate image 90 degree right
+	// ImageRotateRight is rotate image 90 degree right.
 	ImageRotateRight = "right"
-	// ImageRotateLeft is rotate image 90 degree left
+	// ImageRotateLeft is rotate image 90 degree left.
 	ImageRotateLeft = "left"
-	// ImageRotateUpsidedown is rotate image upside down
+	// ImageRotateUpsidedown is rotate image upside down.
 	ImageRotateUpsidedown = "upsidedown"
-	// ImageRotateAutoVertical is rotate image auto vertical
+	// ImageRotateAutoVertical is rotate image auto vertical.
 	ImageRotateAutoVertical = "autovertical"
-	// ImageRotateAutoHorizontal is rotate image auto horizontal
+	// ImageRotateAutoHorizontal is rotate image auto horizontal.
 	ImageRotateAutoHorizontal = "autohorizontal"
-	// ImageRotateExifOrientation is rotate image by exif orientation
+	// ImageRotateExifOrientation is rotate image by exif orientation.
 	ImageRotateExifOrientation = "exiforientation"
 )
 
-// ImageOperator struct
+// ImageOperator struct.
 type ImageOperator struct {
 	repository.ImageObjectRepository
 }
 
-// NewImageOperator creates a new ImageObjectRepository
-func NewImageOperator(ctx context.Context, contenttype string, option ImageOperatorOption) *ImageOperator {
+// NewImageOperator creates a new ImageObjectRepository.
+func NewImageOperator(contenttype string, option ImageOperatorOption) *ImageOperator {
 	objectOption := entity.ImageObjectOption(option)
 	return &ImageOperator{
 		&imageCreator{
@@ -52,44 +52,42 @@ func NewImageOperator(ctx context.Context, contenttype string, option ImageOpera
 				ContentType: contenttype,
 			},
 			option: &objectOption,
-			ctx:    ctx,
 		},
 	}
 }
 
-// imageCreator struct
+// imageCreator struct.
 type imageCreator struct {
 	object          *entity.ImageObject
 	option          *entity.ImageObjectOption
 	exifOrientation int
-	ctx             context.Context
 }
 
-// ImageOperatorOption is Option of ImageOperator struct
+// ImageOperatorOption is Option of ImageOperator struct.
 type ImageOperatorOption entity.ImageObjectOption
 
 type subImager interface {
 	SubImage(r image.Rectangle) image.Image
 }
 
-// Decode images
-func (im *imageCreator) Decode(src io.ReadSeeker) error {
+// Decode images.
+func (im *imageCreator) Decode(ctx context.Context, src io.ReadSeeker) error {
 	var err error
 	im.object.Source, im.object.ImageName, err = image.Decode(src)
 	if err == nil {
-		im.decodeExifOrientation(src)
+		im.decodeExifOrientation(ctx, src)
 	}
 	if err == nil {
 		rectang := im.object.Source.Bounds()
 		im.object.OriginX = rectang.Bounds().Dx()
 		im.object.OriginY = rectang.Bounds().Dy()
-		log.Debug(im.ctx, fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
+		log.Debug(ctx, fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
 	}
 	return err
 }
 
-// Process images process resize and more
-func (im *imageCreator) Process() error {
+// Process images process resize and more.
+func (im *imageCreator) Process(ctx context.Context) error {
 	if im.option.Gamma != 0 {
 		im.object.Source = im.gamma(im.object.Source)
 	}
@@ -101,29 +99,29 @@ func (im *imageCreator) Process() error {
 	}
 	switch {
 	case (im.option.Rotate != ""):
-		err := im.rotate()
+		err := im.rotate(ctx)
 		if err != nil {
 			return err
 		}
-		im.calcResizeXY()
+		im.calcResizeXY(ctx)
 		return im.resize()
 	case !reflect.DeepEqual(im.option.Crop, [4]int{}):
-		im.calcResizeXYWithCrop()
+		im.calcResizeXYWithCrop(ctx)
 		return im.cropAndResize()
 	default:
-		im.calcResizeXY()
+		im.calcResizeXY(ctx)
 		return im.resize()
 	}
 }
 
-// resize images
+// resize images.
 func (im *imageCreator) resize() error {
 	rect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
 	im.object.Dst = im.scale(im.object.Source, rect, im.getDrawer())
 	return nil
 }
 
-// crop and resize images
+// crop and resize images.
 func (im *imageCreator) cropAndResize() error {
 	croprect := image.Rect(im.option.Crop[0], im.option.Crop[1], im.option.Crop[2], im.option.Crop[3])
 	cropimg, err := im.subimage(im.object.Source, croprect)
@@ -135,63 +133,66 @@ func (im *imageCreator) cropAndResize() error {
 	return nil
 }
 
-// rotate images
-func (im *imageCreator) rotate() error {
+// rotate images.
+//
+//nolint:mnd,cyclop
+func (im *imageCreator) rotate(ctx context.Context) error {
 	originX := im.object.OriginX
 	originY := im.object.OriginY
 	switch im.option.Rotate {
 	case ImageRotateRight:
 		rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
-		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, float64(im.object.OriginY), 0), im.getDrawer())
+		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 90.0, float64(im.object.OriginY), 0), im.getDrawer())
 		im.object.OriginX = originY
 		im.object.OriginY = originX
 	case ImageRotateLeft:
 		rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
-		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
+		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 270.0, 0, float64(im.object.OriginX)), im.getDrawer())
 		im.object.OriginX = originY
 		im.object.OriginY = originX
 	case ImageRotateUpsidedown:
 		rect := image.Rect(0, 0, im.object.OriginX, im.object.OriginY)
-		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(180.0, float64(im.object.OriginX), float64(im.object.OriginY)), im.getDrawer())
+		im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 180.0, float64(im.object.OriginX), float64(im.object.OriginY)), im.getDrawer())
 	case ImageRotateAutoVertical:
 		if im.object.OriginX > im.object.OriginY {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
-			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, float64(im.object.OriginY), 0), im.getDrawer())
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 90.0, float64(im.object.OriginY), 0), im.getDrawer())
 			im.object.OriginX = originY
 			im.object.OriginY = originX
 		}
 	case ImageRotateAutoHorizontal:
 		if im.object.OriginY > im.object.OriginX {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
-			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 270.0, 0, float64(im.object.OriginX)), im.getDrawer())
 			im.object.OriginX = originY
 			im.object.OriginY = originX
 		}
 	case ImageRotateExifOrientation:
 		if im.exifOrientation == 3 {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
-			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(180.0, 0, float64(im.object.OriginX)), im.getDrawer())
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 180.0, 0, float64(im.object.OriginX)), im.getDrawer())
 		}
 		if im.exifOrientation == 6 {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
-			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(90.0, 0, float64(im.object.OriginX)), im.getDrawer())
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 90.0, 0, float64(im.object.OriginX)), im.getDrawer())
 			im.object.OriginX = originY
 			im.object.OriginY = originX
 		}
 		if im.exifOrientation == 8 {
 			rect := image.Rect(0, 0, im.object.OriginY, im.object.OriginX)
-			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(270.0, 0, float64(im.object.OriginX)), im.getDrawer())
+			im.object.Source = im.transform(im.object.Source, rect, im.calcRotateAffine(ctx, 270.0, 0, float64(im.object.OriginX)), im.getDrawer())
 			im.object.OriginX = originY
 			im.object.OriginY = originX
 		}
 	default:
-		return fmt.Errorf("Invalid Rotate Parameter")
+		//nolint:err113
+		return errors.New("invalid Rotate Parameter")
 	}
 	return nil
 }
 
-// ImageByte get image bytes
-func (im *imageCreator) ImageByte() ([]byte, error) {
+// ImageByte get image bytes.
+func (im *imageCreator) ImageByte(_ context.Context) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	var err error
 	switch im.object.ContentType {
@@ -202,6 +203,7 @@ func (im *imageCreator) ImageByte() ([]byte, error) {
 	case "image/gif":
 		err = gif.Encode(buf, im.object.Dst, nil)
 	default:
+		//nolint:err113
 		err = errors.New("invalid format")
 	}
 	if err != nil {
@@ -210,60 +212,68 @@ func (im *imageCreator) ImageByte() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// scale image
+// scale image.
 func (im *imageCreator) scale(src image.Image, rect image.Rectangle, scaler draw.Scaler) image.Image {
 	dst := image.NewNRGBA(rect)
 	scaler.Scale(dst, rect, src, src.Bounds(), draw.Over, nil)
 	return dst
 }
 
-// crop image
+// crop image.
 func (im *imageCreator) subimage(src image.Image, rect image.Rectangle) (image.Image, error) {
 	simg, ok := src.(subImager)
 	if !ok {
-		return nil, fmt.Errorf("Image not support Crop")
+		//nolint:err113
+		return nil, errors.New("image not support Crop")
 	}
 	return simg.SubImage(rect), nil
 }
 
-// rotate image
+// rotate image.
 func (im *imageCreator) transform(src image.Image, rect image.Rectangle, t f64.Aff3, scaler draw.Transformer) image.Image {
 	dst := image.NewNRGBA(rect)
 	scaler.Transform(dst, t, src, src.Bounds(), draw.Over, nil)
 	return dst
 }
 
-// change brightness
+// change brightness.
+//
+//nolint:mnd
 func (im *imageCreator) brightness(src image.Image) *image.NRGBA {
 	lookup := make([]uint8, 256)
 	percentage := math.Min(math.Max(float64(im.option.Brightness), -100.0), 100.0)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		lookup[i] = uint8(utils.InRanged(float64(i)*(percentage/100.0), 0, 255))
 	}
 	return im.convertLuminance(src, lookup)
 }
 
-// change contrast
+// change contrast.
+//
+//nolint:mnd
 func (im *imageCreator) contrast(src image.Image) *image.NRGBA {
 	lookup := make([]uint8, 256)
 	percentage := math.Min(math.Max(float64(im.option.Contrast), -100.0), 100.0)
 	v := (100.0 + percentage) / 100.0
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		lookup[i] = uint8(utils.InRanged(((((float64(i)/255)-0.5)*v)+0.5)*255, 0, 255))
 	}
 	return im.convertLuminance(src, lookup)
 }
 
-// change gamma
+// change gamma.
+//
+//nolint:mnd
 func (im *imageCreator) gamma(src image.Image) *image.NRGBA {
 	lookup := make([]uint8, 256)
 	e := 1.0 / math.Max(im.option.Gamma, 0.0001)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		lookup[i] = uint8(utils.InRanged(math.Pow(float64(i)/255.0, e)*255.0, 0, 255))
 	}
 	return im.convertLuminance(src, lookup)
 }
 
+//nolint:mnd
 func (im *imageCreator) convertLuminance(src image.Image, lookup []uint8) *image.NRGBA {
 	fnc := func(c color.RGBA) color.RGBA {
 		return color.RGBA{lookup[c.R], lookup[c.G], lookup[c.B], c.A}
@@ -273,7 +283,7 @@ func (im *imageCreator) convertLuminance(src image.Image, lookup []uint8) *image
 	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
 	utils.ApplyParallel(0, dst.Bounds().Dy(), func(start, end int) {
 		for y := start; y < end; y++ {
-			for x := 0; x < dst.Bounds().Dx(); x++ {
+			for x := range dst.Bounds().Dx() {
 				dstPos := y*dst.Stride + x*4
 				dr := &dst.Pix[dstPos+0]
 				dg := &dst.Pix[dstPos+1]
@@ -296,6 +306,7 @@ func (im *imageCreator) convertLuminance(src image.Image, lookup []uint8) *image
 	return dst
 }
 
+//nolint:mnd,ireturn
 func (im *imageCreator) getDrawer() draw.Interpolator {
 	switch im.option.Quality {
 	case 1:
@@ -311,8 +322,9 @@ func (im *imageCreator) getDrawer() draw.Interpolator {
 	}
 }
 
-func (im *imageCreator) calcResizeXY() {
-	log.Debug(im.ctx, fmt.Sprintf("OptionX: %d / OptionY: %d", im.option.Width, im.option.Height))
+//nolint:cyclop
+func (im *imageCreator) calcResizeXY(ctx context.Context) {
+	log.Debug(ctx, fmt.Sprintf("OptionX: %d / OptionY: %d", im.option.Width, im.option.Height))
 	switch {
 	case (im.option.Width == 0 && im.option.Height == 0):
 		im.object.DstX = im.object.OriginX
@@ -324,12 +336,13 @@ func (im *imageCreator) calcResizeXY() {
 		(im.option.Width != 0 && im.option.Height != 0 && float64(im.object.OriginY)/float64(im.object.OriginX) > float64(im.option.Height)/float64(im.option.Width)):
 		im.calcResizeFitOptionHeight(im.object.OriginX, im.object.OriginY)
 	}
-	log.Debug(im.ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
+	log.Debug(ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
 }
 
-func (im *imageCreator) calcResizeXYWithCrop() {
-	log.Debug(im.ctx, fmt.Sprintf("OptionX: %d / OptionY: %d", im.option.Width, im.option.Height))
-	log.Debug(im.ctx, fmt.Sprintf("Crop: %v", im.option.Crop))
+//nolint:cyclop
+func (im *imageCreator) calcResizeXYWithCrop(ctx context.Context) {
+	log.Debug(ctx, fmt.Sprintf("OptionX: %d / OptionY: %d", im.option.Width, im.option.Height))
+	log.Debug(ctx, fmt.Sprintf("Crop: %v", im.option.Crop))
 	cropedX := int(math.Abs(float64(im.option.Crop[2] - im.option.Crop[0])))
 	cropedY := int(math.Abs(float64(im.option.Crop[3] - im.option.Crop[1])))
 	switch {
@@ -343,7 +356,7 @@ func (im *imageCreator) calcResizeXYWithCrop() {
 		(im.option.Width != 0 && im.option.Height != 0 && float64(cropedY)/float64(cropedX) > float64(im.option.Height)/float64(im.option.Width)):
 		im.calcResizeFitOptionHeight(cropedX, cropedY)
 	}
-	log.Debug(im.ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
+	log.Debug(ctx, fmt.Sprintf("DstX: %d / DstY: %d", im.object.DstX, im.object.DstY))
 }
 
 func (im *imageCreator) calcResizeFitOptionWidth(originx, originy int) {
@@ -362,8 +375,9 @@ func (im *imageCreator) calcResizeFitOptionHeight(originx, originy int) {
 	im.object.DstY = im.option.Height
 }
 
-func (im *imageCreator) calcRotateAffine(deg, moveleft, movedown float64) f64.Aff3 {
-	log.Debug(im.ctx, fmt.Sprintf("deg: %v, moveleft: %v, movedown: %v", deg, moveleft, movedown))
+//nolint:mnd
+func (im *imageCreator) calcRotateAffine(ctx context.Context, deg, moveleft, movedown float64) f64.Aff3 {
+	log.Debug(ctx, fmt.Sprintf("deg: %v, moveleft: %v, movedown: %v", deg, moveleft, movedown))
 	rad := deg * math.Pi / 180
 	cos, sin := math.Cos(rad), math.Sin(rad)
 	return f64.Aff3{
@@ -372,6 +386,7 @@ func (im *imageCreator) calcRotateAffine(deg, moveleft, movedown float64) f64.Af
 	}
 }
 
+//nolint:mnd
 func (im *imageCreator) jpegOption() *jpeg.Options {
 	switch im.option.Quality {
 	case 1:
@@ -387,26 +402,26 @@ func (im *imageCreator) jpegOption() *jpeg.Options {
 	}
 }
 
-func (im *imageCreator) decodeExifOrientation(src io.ReadSeeker) {
+func (im *imageCreator) decodeExifOrientation(ctx context.Context, src io.ReadSeeker) {
 	if _, err := src.Seek(0, io.SeekStart); err != nil {
-		log.Debug(im.ctx, fmt.Sprintf("reader seek 0 error %v", err.Error()))
+		log.Debug(ctx, fmt.Sprintf("reader seek 0 error %v", err.Error()))
 		return
 	}
 	decodedExif, err := exif.Decode(src)
 	if err != nil {
-		log.Debug(im.ctx, fmt.Sprintf("exif decode error %v", err.Error()))
+		log.Debug(ctx, fmt.Sprintf("exif decode error %v", err.Error()))
 		return
 	}
 	orientation, err := decodedExif.Get(exif.Orientation)
 	if err != nil {
-		log.Debug(im.ctx, fmt.Sprintf("exif orientation error %v", err.Error()))
+		log.Debug(ctx, fmt.Sprintf("exif orientation error %v", err.Error()))
 		return
 	}
 	orientationvVal, err := orientation.Int(0)
 	if err != nil {
-		log.Debug(im.ctx, fmt.Sprintf("exif orientation int error %v", err.Error()))
+		log.Debug(ctx, fmt.Sprintf("exif orientation int error %v", err.Error()))
 		return
 	}
 	im.exifOrientation = orientationvVal
-	log.Debug(im.ctx, fmt.Sprintf("exif orientation %v", im.exifOrientation))
+	log.Debug(ctx, fmt.Sprintf("exif orientation %v", im.exifOrientation))
 }

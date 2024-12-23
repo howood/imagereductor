@@ -1,34 +1,36 @@
 package cloudstorages
 
 import (
+	"context"
+	"errors"
 	"fmt"
-
-	"cloud.google.com/go/storage"
-	extramimetype "github.com/gabriel-vasile/mimetype"
-	"golang.org/x/net/context"
-	"google.golang.org/api/iterator"
-
 	"io"
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/storage"
+	extramimetype "github.com/gabriel-vasile/mimetype"
 	"github.com/howood/imagereductor/domain/entity"
 	log "github.com/howood/imagereductor/infrastructure/logger"
+	"google.golang.org/api/iterator"
 )
 
-// GcsBucketUploadfiles is bucket to upload
+// GcsBucketUploadfiles is bucket to upload.
+//
+//nolint:gochecknoglobals
 var GcsBucketUploadfiles = os.Getenv("GCS_BUKET")
 
-// GcsProjectID is GCS Project ID
-var GcsProjectID = os.Getenv("GCS_PROJECTID")
+// GcsProjectID is GCS Project ID.
+//
+//nolint:gochecknoglobals
+var gcsProjectID = os.Getenv("GCS_PROJECTID")
 
-// GCSInstance struct
+// GCSInstance struct.
 type GCSInstance struct {
 	client *storage.Client
-	ctx    context.Context
 }
 
-// NewGCS creates a new GCSInstance
+// NewGCS creates a new GCSInstance.
 func NewGCS(ctx context.Context) *GCSInstance {
 	log.Debug(ctx, "----GCS DNS----")
 	var I *GCSInstance
@@ -38,23 +40,22 @@ func NewGCS(ctx context.Context) *GCSInstance {
 	}
 	I = &GCSInstance{
 		client: client,
-		ctx:    ctx,
 	}
-	I.init()
+	I.init(ctx)
 	return I
 }
 
-func (gcsinstance *GCSInstance) init() {
-	if _, exitstserr := gcsinstance.client.Bucket(GcsBucketUploadfiles).Attrs(gcsinstance.ctx); exitstserr != nil {
-		if err := gcsinstance.client.Bucket(GcsBucketUploadfiles).Create(gcsinstance.ctx, GcsProjectID, nil); err != nil {
-			log.Debug(gcsinstance.ctx, "***CreateError****")
-			log.Debug(gcsinstance.ctx, err)
+func (gcsinstance *GCSInstance) init(ctx context.Context) {
+	if _, exitstserr := gcsinstance.client.Bucket(GcsBucketUploadfiles).Attrs(ctx); exitstserr != nil {
+		if err := gcsinstance.client.Bucket(GcsBucketUploadfiles).Create(ctx, gcsProjectID, nil); err != nil {
+			log.Debug(ctx, "***CreateError****")
+			log.Debug(ctx, err)
 		}
 	}
 }
 
-// Put puts to storage
-func (gcsinstance *GCSInstance) Put(bucket string, path string, file io.ReadSeeker) error {
+// Put puts to storage.
+func (gcsinstance *GCSInstance) Put(ctx context.Context, bucket string, path string, file io.ReadSeeker) error {
 	bytes, err := io.ReadAll(file)
 	if err != nil {
 		return err
@@ -62,12 +63,12 @@ func (gcsinstance *GCSInstance) Put(bucket string, path string, file io.ReadSeek
 	mimetype := http.DetectContentType(bytes)
 	if mimetype == "" || mimetype == mimeOctetStream {
 		mtype := extramimetype.Detect(bytes)
-		log.Debug(gcsinstance.ctx, mtype)
+		log.Debug(ctx, mtype)
 		mimetype = mtype.String()
 	}
-	log.Debug(gcsinstance.ctx, mimetype)
+	log.Debug(ctx, mimetype)
 	object := gcsinstance.client.Bucket(bucket).Object(path)
-	writer := object.NewWriter(gcsinstance.ctx)
+	writer := object.NewWriter(ctx)
 
 	writer.ContentType = mimetype
 	writer.CacheControl = "no-cache"
@@ -80,19 +81,18 @@ func (gcsinstance *GCSInstance) Put(bucket string, path string, file io.ReadSeek
 	return nil
 }
 
-// Get gets from storage
-func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, error) {
-	log.Debug(gcsinstance.ctx, bucket)
-	log.Debug(gcsinstance.ctx, key)
+// Get gets from storage.
+func (gcsinstance *GCSInstance) Get(ctx context.Context, bucket string, key string) (string, []byte, error) {
+	log.Debug(ctx, bucket)
+	log.Debug(ctx, key)
 
-	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(gcsinstance.ctx)
+	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(ctx)
 	if err != nil {
 		return "", nil, err
 	}
 	defer reader.Close()
 
 	contenttype := reader.Attrs.ContentType
-	// CloudStorage上のObjectの、コンテンツの読み込み
 	response, err := io.ReadAll(reader)
 	if err != nil {
 		return "", nil, err
@@ -101,12 +101,12 @@ func (gcsinstance *GCSInstance) Get(bucket string, key string) (string, []byte, 
 	return contenttype, response, nil
 }
 
-// GetByStreaming gets from storage by streaming
-func (gcsinstance *GCSInstance) GetByStreaming(bucket string, key string) (string, io.ReadCloser, error) {
-	log.Debug(gcsinstance.ctx, bucket)
-	log.Debug(gcsinstance.ctx, key)
+// GetByStreaming gets from storage by streaming.
+func (gcsinstance *GCSInstance) GetByStreaming(ctx context.Context, bucket string, key string) (string, io.ReadCloser, error) {
+	log.Debug(ctx, bucket)
+	log.Debug(ctx, key)
 
-	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(gcsinstance.ctx)
+	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(ctx)
 	if err != nil {
 		return "", nil, err
 	}
@@ -116,12 +116,12 @@ func (gcsinstance *GCSInstance) GetByStreaming(bucket string, key string) (strin
 	return contenttype, reader, nil
 }
 
-// GetObjectInfo gets from storage
-func (gcsinstance *GCSInstance) GetObjectInfo(bucket string, key string) (entity.StorageObjectInfo, error) {
-	log.Debug(gcsinstance.ctx, bucket)
-	log.Debug(gcsinstance.ctx, key)
+// GetObjectInfo gets from storage.
+func (gcsinstance *GCSInstance) GetObjectInfo(ctx context.Context, bucket string, key string) (entity.StorageObjectInfo, error) {
+	log.Debug(ctx, bucket)
+	log.Debug(ctx, key)
 	so := entity.StorageObjectInfo{}
-	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(gcsinstance.ctx)
+	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(ctx)
 	if err != nil {
 		return so, err
 	}
@@ -132,15 +132,15 @@ func (gcsinstance *GCSInstance) GetObjectInfo(bucket string, key string) (entity
 	return so, nil
 }
 
-// List get list from storage
-func (gcsinstance *GCSInstance) List(bucket string, key string) ([]string, error) {
-	log.Debug(gcsinstance.ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))
+// List get list from storage.
+func (gcsinstance *GCSInstance) List(ctx context.Context, bucket string, key string) ([]string, error) {
+	log.Debug(ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))
 	query := &storage.Query{Prefix: key}
 	var names []string
-	it := gcsinstance.client.Bucket(bucket).Objects(gcsinstance.ctx, query)
+	it := gcsinstance.client.Bucket(bucket).Objects(ctx, query)
 	for {
 		attrs, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
@@ -151,8 +151,8 @@ func (gcsinstance *GCSInstance) List(bucket string, key string) ([]string, error
 	return names, nil
 }
 
-// Delete deletes from storage
-func (gcsinstance *GCSInstance) Delete(bucket string, key string) error {
-	err := gcsinstance.client.Bucket(bucket).Object(key).Delete(gcsinstance.ctx)
+// Delete deletes from storage.
+func (gcsinstance *GCSInstance) Delete(ctx context.Context, bucket string, key string) error {
+	err := gcsinstance.client.Bucket(bucket).Object(key).Delete(ctx)
 	return err
 }

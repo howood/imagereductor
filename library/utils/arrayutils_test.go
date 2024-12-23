@@ -1,58 +1,66 @@
-package utils
+package utils_test
 
 import (
 	"testing"
+
+	"github.com/howood/imagereductor/library/utils"
 )
 
 func Test_StringArrayContains(t *testing.T) {
+	t.Parallel()
+
 	testarray := []string{"aaa", "bbb", "ccc"}
 	testarray2 := []string{}
-	if StringArrayContains(testarray, "bbb") == false {
+	if utils.StringArrayContains(testarray, "bbb") == false {
 		t.Fatal("failed StringArrayContains ")
 	}
-	if StringArrayContains(testarray, "ddd") == true {
+	if utils.StringArrayContains(testarray, "ddd") == true {
 		t.Fatal("failed StringArrayContains ")
 	}
-	if StringArrayContains(testarray2, "aaa") == true {
+	if utils.StringArrayContains(testarray2, "aaa") == true {
 		t.Fatal("failed StringArrayContains ")
 	}
-	if StringArrayContains(nil, "aaa") == true {
+	if utils.StringArrayContains(nil, "aaa") == true {
 		t.Fatal("failed StringArrayContains ")
 	}
 	t.Log("success StringArrayContains")
 }
 
 func Test_StringArrayContainsForwardMatch(t *testing.T) {
+	t.Parallel()
+
 	testarray := []string{"abc", "bcd", "ert"}
 	testarray2 := []string{}
-	if StringArrayContainsForwardMatch(testarray, "bc") == false {
+	if utils.StringArrayContainsForwardMatch(testarray, "bc") == false {
 		t.Fatal("failed StringArrayContainsForwardMatch ")
 	}
-	if StringArrayContainsForwardMatch(testarray, "rt") == true {
+	if utils.StringArrayContainsForwardMatch(testarray, "rt") == true {
 		t.Fatal("failed StringArrayContainsForwardMatch ")
 	}
-	if StringArrayContainsForwardMatch(testarray2, "aaa") == true {
+	if utils.StringArrayContainsForwardMatch(testarray2, "aaa") == true {
 		t.Fatal("failed StringArrayContainsForwardMatch ")
 	}
-	if StringArrayContainsForwardMatch(nil, "aaa") == true {
+	if utils.StringArrayContainsForwardMatch(nil, "aaa") == true {
 		t.Fatal("failed StringArrayContainsForwardMatch ")
 	}
 	t.Log("success StringArrayContainsForwardMatch")
 }
 
 func Test_IntArrayContains(t *testing.T) {
+	t.Parallel()
+
 	testarray := []int{234, 435, 7666}
 	testarray2 := []int{}
-	if IntArrayContains(testarray, 435) == false {
+	if utils.IntArrayContains(testarray, 435) == false {
 		t.Fatal("failed IntArrayContains ")
 	}
-	if IntArrayContains(testarray, 297) == true {
+	if utils.IntArrayContains(testarray, 297) == true {
 		t.Fatal("failed IntArrayContains ")
 	}
-	if IntArrayContains(testarray2, 545) == true {
+	if utils.IntArrayContains(testarray2, 545) == true {
 		t.Fatal("failed IntArrayContains ")
 	}
-	if IntArrayContains(nil, 324) == true {
+	if utils.IntArrayContains(nil, 324) == true {
 		t.Fatal("failed IntArrayContains ")
 	}
 	t.Log("success IntArrayContains")

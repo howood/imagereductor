@@ -11,19 +11,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// TokenHandler struct
+// TokenHandler struct.
 type TokenHandler struct {
 	BaseHandler
 }
 
-// Request is get from storage
+// Request is get from storage.
 func (th TokenHandler) Request(c echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
-	th.ctx = context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
-	log.Info(th.ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
-	log.Info(th.ctx, c.Request().Method)
-	log.Info(th.ctx, c.Request().Header)
+	ctx := context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
+	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
+	log.Info(ctx, c.Request().Method)
+	log.Info(ctx, c.Request().Header)
 	claimname := uuid.GetUUID(uuid.SatoriUUID)
-	tokenstr := usecase.TokenUsecase{}.CreateToken(th.ctx, claimname)
+	tokenstr := usecase.TokenUsecase{}.CreateToken(ctx, claimname)
 	return c.JSONPretty(http.StatusOK, map[string]interface{}{"token": tokenstr}, "    ")
 }

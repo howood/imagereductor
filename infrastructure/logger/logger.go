@@ -19,8 +19,10 @@ const (
 	logModeMedium = "minimum"
 )
 
+//nolint:gochecknoglobals
 var log *zap.Logger
 
+//nolint:gochecknoinits
 func init() {
 	level := zap.DebugLevel
 	if os.Getenv("VERIFY_MODE") != "enable" {
@@ -59,42 +61,42 @@ func init() {
 	}
 }
 
-// Debug log output with DEBUG
+// Debug log output with Debug.
 func Debug(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Debug(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
-// Info log output with Info
+// Info log output with Info.
 func Info(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Info(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
-// Warn log output with Warn
+// Warn log output with Warn.
 func Warn(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Warn(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
-// Error log output with Error
+// Error log output with Error.
 func Error(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Error(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
-// Panic log output with Panic
+// Panic log output with Panic.
 func Panic(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Panic(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
-// Fatal log output with Fatal
+// Fatal log output with Fatal.
 func Fatal(ctx context.Context, msg ...interface{}) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)

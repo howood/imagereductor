@@ -10,67 +10,70 @@ import (
 )
 
 const (
-	// NumInstance is number of instance
+	// NumInstance is number of instance.
 	NumInstance = 5
-	// PurgeExpiredTime is time to purge cache
+	// DefaultExpiration is default expiration.
+	DefaultExpiration = 60
+	// PurgeExpiredTime is time to purge cache.
 	PurgeExpiredTime = 10
 )
 
+//nolint:gochecknoglobals
 var gocacheConnectionMap map[int]*cache.Cache
 
+//nolint:gochecknoinits
 func init() {
 	gocacheConnectionMap = make(map[int]*cache.Cache, 0)
-	for i := 0; i < NumInstance; i++ {
-		gocacheConnectionMap[i] = cache.New(60*time.Minute, PurgeExpiredTime*time.Minute)
+	for i := range NumInstance {
+		gocacheConnectionMap[i] = cache.New(DefaultExpiration*time.Minute, PurgeExpiredTime*time.Minute)
 	}
 }
 
-// GoCacheClient struct
-type GoCacheClient struct {
-	ctx context.Context
-}
+// GoCacheClient struct.
+type GoCacheClient struct{}
 
-// NewGoCacheClient creates a new GoCacheClient
-func NewGoCacheClient(ctx context.Context) *GoCacheClient {
-	ret := &GoCacheClient{ctx: ctx}
+// NewGoCacheClient creates a new GoCacheClient.
+func NewGoCacheClient() *GoCacheClient {
+	ret := &GoCacheClient{}
 	return ret
 }
 
-// Get gets from cache
-func (cc *GoCacheClient) Get(key string) (interface{}, bool) {
-	return cc.getInstance(key).Get(key)
+// Get gets from cache.
+func (cc *GoCacheClient) Get(ctx context.Context, key string) (interface{}, bool) {
+	return cc.getInstance(ctx, key).Get(key)
 }
 
-// Set puts to cache
-func (cc *GoCacheClient) Set(key string, value interface{}, ttl time.Duration) error {
-	cc.getInstance(key).Set(key, value, ttl)
+// Set puts to cache.
+func (cc *GoCacheClient) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+	cc.getInstance(ctx, key).Set(key, value, ttl)
 	return nil
 }
 
-// Del deletes from cache
-func (cc *GoCacheClient) Del(key string) error {
-	cc.getInstance(key).Delete(key)
+// Del deletes from cache.
+func (cc *GoCacheClient) Del(ctx context.Context, key string) error {
+	cc.getInstance(ctx, key).Delete(key)
 	return nil
 }
 
-// DelBulk bulk deletes from cache
-func (cc *GoCacheClient) DelBulk(key string) error {
-	cc.getInstance(key).Delete(key)
+// DelBulk bulk deletes from cache.
+func (cc *GoCacheClient) DelBulk(ctx context.Context, key string) error {
+	cc.getInstance(ctx, key).Delete(key)
 	return nil
 }
 
-// CloseConnect close connection
+// CloseConnect close connection.
 func (cc *GoCacheClient) CloseConnect() error {
 	return nil
 }
 
-func (cc *GoCacheClient) getInstance(key string) *cache.Cache {
+//nolint:mnd
+func (cc *GoCacheClient) getInstance(ctx context.Context, key string) *cache.Cache {
 	// djb2 algorithm
-	i, hash := 0, uint32(5381)
+	_, hash := 0, uint32(5381)
 	for _, c := range key {
 		hash = ((hash << 5) + hash) + uint32(c)
 	}
-	i = int(hash) % NumInstance
-	log.Info(cc.ctx, fmt.Sprintf("get_instance: %d", i))
+	i := int(hash) % NumInstance
+	log.Info(ctx, fmt.Sprintf("get_instance: %d", i))
 	return gocacheConnectionMap[i]
 }

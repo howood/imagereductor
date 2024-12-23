@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-// GetContentTypeByReadSeeker is get content type by Readseeker
+// GetContentTypeByReadSeeker is get content type by Readseeker.
 func GetContentTypeByReadSeeker(reader io.ReadSeeker) (string, error) {
 	_, err := reader.Seek(0, io.SeekStart)
 	if err != nil {

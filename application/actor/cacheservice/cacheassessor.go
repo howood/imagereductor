@@ -2,7 +2,6 @@ package cacheservice
 
 import (
 	"context"
-	"errors"
 	"os"
 	"time"
 
@@ -11,13 +10,12 @@ import (
 	"github.com/howood/imagereductor/library/utils"
 )
 
-// CacheAssessor struct
+// CacheAssessor struct.
 type CacheAssessor struct {
 	instance caches.CacheInstance
-	ctx      context.Context
 }
 
-// NewCacheAssessor creates a new CacheAssessor
+// NewCacheAssessor creates a new CacheAssessor.
 func NewCacheAssessor(ctx context.Context, db int) *CacheAssessor {
 	var I *CacheAssessor
 	log.Debug(ctx, "use:"+os.Getenv("CACHE_TYPE"))
@@ -25,64 +23,63 @@ func NewCacheAssessor(ctx context.Context, db int) *CacheAssessor {
 	case "redis":
 		I = &CacheAssessor{
 			instance: caches.NewRedis(ctx, true, db),
-			ctx:      ctx,
 		}
 	case "gocache":
 		I = &CacheAssessor{
-			instance: caches.NewGoCacheClient(ctx),
-			ctx:      ctx,
+			instance: caches.NewGoCacheClient(),
 		}
 	default:
-		panic(errors.New("Invalid CACHE_TYPE"))
+		panic("Invalid CACHE_TYPE")
 	}
 	return I
 }
 
-// Get returns cache contents
-func (ca *CacheAssessor) Get(index string) (interface{}, bool) {
+// Get returns cache contents.
+func (ca *CacheAssessor) Get(ctx context.Context, index string) (interface{}, bool) {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return
 		}
 	}()
-	cachedvalue, cachedfound := ca.instance.Get(index)
+	cachedvalue, cachedfound := ca.instance.Get(ctx, index)
 	if cachedfound {
 		return cachedvalue, true
 	}
 	return "", false
 }
 
-// Set puts cache contents
-func (ca *CacheAssessor) Set(index string, value interface{}, expired time.Duration) error {
+// Set puts cache contents.
+func (ca *CacheAssessor) Set(ctx context.Context, index string, value interface{}, expired int) error {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return
 		}
 	}()
-	return ca.instance.Set(index, value, expired*time.Second)
+	return ca.instance.Set(ctx, index, value, time.Duration(expired)*time.Second)
 }
 
-// Delete remove cache contents
-func (ca *CacheAssessor) Delete(index string) error {
+// Delete remove cache contents.
+func (ca *CacheAssessor) Delete(ctx context.Context, index string) error {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return
 		}
 	}()
-	return ca.instance.Del(index)
+	return ca.instance.Del(ctx, index)
 }
 
-// GetChacheExpired get cache expired
-func GetChacheExpired() time.Duration {
-	return time.Duration(utils.GetOsEnvInt("CACHEEXPIED", 300))
+// GetChacheExpired get cache expired.
+func GetChacheExpired() int {
+	//nolint:mnd
+	return utils.GetOsEnvInt("CACHEEXPIED", 300)
 }
 
-// GetCachedDB get cache db
+// GetCachedDB get cache db.
 func GetCachedDB() int {
 	return utils.GetOsEnvInt("CACHEDDB", 0)
 }
 
-// GetSessionDB get session db
+// GetSessionDB get session db.
 func GetSessionDB() int {
 	return utils.GetOsEnvInt("SESSIONDB", 1)
 }
