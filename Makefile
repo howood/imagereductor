@@ -17,7 +17,6 @@ testv:
 
 lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.62.2 &&  \
-	cd /go/src/github.com/howood/imagereductor &&  \
 	./bin/golangci-lint run ./...
 
 fmt:
