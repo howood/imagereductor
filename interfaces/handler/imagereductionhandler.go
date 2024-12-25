@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/howood/imagereductor/application/actor"
-	"github.com/howood/imagereductor/application/usecase"
 	"github.com/howood/imagereductor/application/validator"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
@@ -49,7 +48,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 		log.Warn(ctx, err)
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
-	contenttype, imagebyte, err := usecase.ImageUsecase{}.GetImage(ctx, imageoption, c.FormValue(config.FormKeyStorageKey))
+	contenttype, imagebyte, err := irh.UcCluster.ImageUC.GetImage(ctx, imageoption, c.FormValue(config.FormKeyStorageKey))
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
@@ -82,7 +81,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 	}
 	// get from storage
 
-	contenttype, filebyte, err := usecase.ImageUsecase{}.GetFile(ctx, c.FormValue(config.FormKeyStorageKey))
+	contenttype, filebyte, err := irh.UcCluster.ImageUC.GetFile(ctx, c.FormValue(config.FormKeyStorageKey))
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
@@ -110,7 +109,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
 	// get from storage
-	contenttype, contentLength, response, err := usecase.ImageUsecase{}.GetFileStream(ctx, c.FormValue(config.FormKeyStorageKey))
+	contenttype, contentLength, response, err := irh.UcCluster.ImageUC.GetFileStream(ctx, c.FormValue(config.FormKeyStorageKey))
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
@@ -150,7 +149,7 @@ func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
 		return nil
 	}
 	// get from storage
-	objectInfo, err := usecase.ImageUsecase{}.GetFileInfo(ctx, c.FormValue(config.FormKeyStorageKey))
+	objectInfo, err := irh.UcCluster.ImageUC.GetFileInfo(ctx, c.FormValue(config.FormKeyStorageKey))
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
@@ -197,11 +196,11 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
 	// resizing image
-	convertedimagebyte, err := usecase.ImageUsecase{}.ConvertImage(ctx, imageoption, reader)
+	convertedimagebyte, err := irh.UcCluster.ImageUC.ConvertImage(ctx, imageoption, reader)
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
-	return usecase.ImageUsecase{}.UploadToStorage(ctx, c.FormValue(config.FormKeyPath), reader, convertedimagebyte)
+	return irh.UcCluster.ImageUC.UploadToStorage(ctx, c.FormValue(config.FormKeyPath), reader, convertedimagebyte)
 }
 
 // UploadFile is to upload non image file to storage.
@@ -221,7 +220,7 @@ func (irh ImageReductionHandler) UploadFile(c echo.Context) error {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
 	defer reader.Close()
-	return usecase.ImageUsecase{}.UploadToStorage(ctx, c.FormValue(config.FormKeyPath), reader, nil)
+	return irh.UcCluster.ImageUC.UploadToStorage(ctx, c.FormValue(config.FormKeyPath), reader, nil)
 }
 
 //nolint:mnd
@@ -235,7 +234,7 @@ func (irh ImageReductionHandler) validateUploadedImage(ctx context.Context, read
 }
 
 func (irh ImageReductionHandler) getCache(ctx context.Context, c echo.Context, requesturi string) bool {
-	exist, cachedcontent, err := usecase.CacheUsecase{}.GetCache(ctx, requesturi)
+	exist, cachedcontent, err := irh.UcCluster.CacheUC.GetCache(ctx, requesturi)
 	if !exist {
 		return false
 	}
@@ -261,7 +260,7 @@ func (irh ImageReductionHandler) getCache(ctx context.Context, c echo.Context, r
 }
 
 func (irh ImageReductionHandler) setCache(ctx context.Context, mimetype string, data []byte, requesturi string) {
-	usecase.CacheUsecase{}.SetCache(ctx, mimetype, data, requesturi, irh.setNewLatsModified())
+	irh.UcCluster.CacheUC.SetCache(ctx, mimetype, data, requesturi, irh.setNewLatsModified())
 }
 
 func (irh ImageReductionHandler) getImageOptionByFormValue(ctx context.Context, c echo.Context) (actor.ImageOperatorOption, error) {

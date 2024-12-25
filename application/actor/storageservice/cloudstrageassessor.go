@@ -20,18 +20,19 @@ type CloudStorageAssessor struct {
 }
 
 // NewCloudStorageAssessor creates a new CloudStorageAssessor.
-func NewCloudStorageAssessor(ctx context.Context) *CloudStorageAssessor {
+func NewCloudStorageAssessor() *CloudStorageAssessor {
+	ctx := context.Background()
 	var I *CloudStorageAssessor
 	log.Debug(ctx, "use:"+os.Getenv("STORAGE_TYPE"))
 	switch os.Getenv("STORAGE_TYPE") {
 	case "s3":
 		I = &CloudStorageAssessor{
-			instance: cloudstorages.NewS3(ctx),
+			instance: cloudstorages.NewS3(),
 			bucket:   cloudstorages.S3BucketUploadfiles,
 		}
 	case "gcs":
 		I = &CloudStorageAssessor{
-			instance: cloudstorages.NewGCS(ctx),
+			instance: cloudstorages.NewGCS(),
 			bucket:   cloudstorages.GcsBucketUploadfiles,
 		}
 	default:

@@ -8,6 +8,10 @@ import (
 
 type TokenUsecase struct{}
 
+func NewTokenUsecase() *TokenUsecase {
+	return &TokenUsecase{}
+}
+
 func (tu TokenUsecase) CreateToken(ctx context.Context, claimname string) string {
 	jwtinstance := actor.NewJwtOperator(claimname, false)
 	return jwtinstance.CreateToken(ctx)

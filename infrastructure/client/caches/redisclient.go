@@ -38,7 +38,8 @@ func init() {
 }
 
 // NewRedis creates a new RedisInstance.
-func NewRedis(ctx context.Context, connectionpersistent bool, redisdb int) *RedisInstance {
+func NewRedis(connectionpersistent bool, redisdb int) *RedisInstance {
+	ctx := context.Background()
 	log.Debug(ctx, "----DNS----")
 	log.Debug(ctx, os.Getenv("REDISHOST")+":"+os.Getenv("REDISPORT"))
 	log.Debug(ctx, os.Getenv("REDISPASSWORD"))

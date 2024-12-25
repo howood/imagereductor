@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/howood/imagereductor/application/actor/storageservice"
+	"github.com/howood/imagereductor/di/uccluster"
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/library/utils"
 	"github.com/labstack/echo/v4"
@@ -20,7 +21,9 @@ const (
 )
 
 // BaseHandler struct.
-type BaseHandler struct{}
+type BaseHandler struct {
+	UcCluster *uccluster.UsecaseCluster
+}
 
 //nolint:unparam
 func (bh BaseHandler) errorResponse(ctx context.Context, c echo.Context, statudcode int, err error) error {
