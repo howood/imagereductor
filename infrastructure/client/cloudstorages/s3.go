@@ -28,7 +28,8 @@ type S3Instance struct {
 }
 
 // NewS3 creates a new S3Instance.
-func NewS3(ctx context.Context) *S3Instance {
+func NewS3() *S3Instance {
+	ctx := context.Background()
 	log.Debug(ctx, "----S3 DNS----")
 	log.Debug(ctx, os.Getenv("AWS_S3_REGION"))
 	log.Debug(ctx, os.Getenv("AWS_S3_ENDPOINT"))

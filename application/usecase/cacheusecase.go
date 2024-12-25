@@ -10,12 +10,19 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
-type CacheUsecase struct{}
+type CacheUsecase struct {
+	cacheAssessor *cacheservice.CacheAssessor
+}
+
+func NewCacheUsecase() *CacheUsecase {
+	return &CacheUsecase{
+		cacheAssessor: cacheservice.NewCacheAssessor(cacheservice.GetCachedDB()),
+	}
+}
 
 //nolint:ireturn
-func (cu CacheUsecase) GetCache(ctx context.Context, requesturi string) (bool, repository.CachedContentRepository, error) {
-	cacheAssessor := cacheservice.NewCacheAssessor(ctx, cacheservice.GetCachedDB())
-	if cachedvalue, cachedfound := cacheAssessor.Get(ctx, requesturi); cachedfound {
+func (cu *CacheUsecase) GetCache(ctx context.Context, requesturi string) (bool, repository.CachedContentRepository, error) {
+	if cachedvalue, cachedfound := cu.cacheAssessor.Get(ctx, requesturi); cachedfound {
 		cachedcontent := actor.NewCachedContentOperator()
 		var err error
 		switch xi := cachedvalue.(type) {
@@ -36,15 +43,14 @@ func (cu CacheUsecase) GetCache(ctx context.Context, requesturi string) (bool, r
 	return false, nil, nil
 }
 
-func (cu CacheUsecase) SetCache(ctx context.Context, mimetype string, data []byte, requesturi string, latsModified string) {
+func (cu *CacheUsecase) SetCache(ctx context.Context, mimetype string, data []byte, requesturi string, latsModified string) {
 	cachedresponse := actor.NewCachedContentOperator()
 	cachedresponse.Set(mimetype, latsModified, data)
 	encodedcached, err := cachedresponse.GobEncode()
 	if err != nil {
 		log.Error(ctx, err)
 	} else {
-		cacheAssessor := cacheservice.NewCacheAssessor(ctx, cacheservice.GetCachedDB())
-		if setErr := cacheAssessor.Set(ctx, requesturi, encodedcached, cacheservice.GetChacheExpired()); setErr != nil {
+		if setErr := cu.cacheAssessor.Set(ctx, requesturi, encodedcached, cacheservice.GetChacheExpired()); setErr != nil {
 			log.Error(ctx, setErr)
 		}
 	}

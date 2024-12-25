@@ -31,7 +31,8 @@ type GCSInstance struct {
 }
 
 // NewGCS creates a new GCSInstance.
-func NewGCS(ctx context.Context) *GCSInstance {
+func NewGCS() *GCSInstance {
+	ctx := context.Background()
 	log.Debug(ctx, "----GCS DNS----")
 	var I *GCSInstance
 	client, err := storage.NewClient(ctx)

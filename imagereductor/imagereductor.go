@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/howood/imagereductor/application/actor"
+	"github.com/howood/imagereductor/di/uccluster"
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/infrastructure/custommiddleware"
 	"github.com/howood/imagereductor/interfaces/handler"
@@ -17,13 +18,16 @@ import (
 func main() {
 	defaultPort := utils.GetOsEnv("SERVER_PORT", "8080")
 
+	usecaseCluster := uccluster.NewUsecaseCluster()
+	baseHandler := handler.BaseHandler{UcCluster: usecaseCluster}
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
 	if os.Getenv("ADMIN_MODE") == "enable" {
-		e.GET("/token", handler.TokenHandler{}.Request, custommiddleware.IPRestriction())
+		e.GET("/token", handler.TokenHandler{BaseHandler: baseHandler}.Request, custommiddleware.IPRestriction())
 	}
 	jwtconfig := echojwt.Config{
 		Skipper: custommiddleware.OptionsMethodSkipper,
@@ -32,12 +36,12 @@ func main() {
 		},
 		SigningKey: []byte(actor.TokenSecret),
 	}
-	e.GET("/", handler.ImageReductionHandler{}.Request)
-	e.POST("/", handler.ImageReductionHandler{}.Upload, echojwt.WithConfig(jwtconfig))
-	e.GET("/files", handler.ImageReductionHandler{}.RequestFile)
-	e.POST("/files", handler.ImageReductionHandler{}.UploadFile, echojwt.WithConfig(jwtconfig))
-	e.GET("/streaming", handler.ImageReductionHandler{}.RequestStreaming)
-	e.GET("/info", handler.ImageReductionHandler{}.RequestInfo)
+	e.GET("/", handler.ImageReductionHandler{BaseHandler: baseHandler}.Request)
+	e.POST("/", handler.ImageReductionHandler{BaseHandler: baseHandler}.Upload, echojwt.WithConfig(jwtconfig))
+	e.GET("/files", handler.ImageReductionHandler{BaseHandler: baseHandler}.RequestFile)
+	e.POST("/files", handler.ImageReductionHandler{BaseHandler: baseHandler}.UploadFile, echojwt.WithConfig(jwtconfig))
+	e.GET("/streaming", handler.ImageReductionHandler{BaseHandler: baseHandler}.RequestStreaming)
+	e.GET("/info", handler.ImageReductionHandler{BaseHandler: baseHandler}.RequestInfo)
 
 	e.Logger.Fatal(e.Start(":" + defaultPort))
 }

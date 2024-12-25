@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/howood/imagereductor/application/usecase"
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/infrastructure/uuid"
@@ -24,6 +23,6 @@ func (th TokenHandler) Request(c echo.Context) error {
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	claimname := uuid.GetUUID(uuid.SatoriUUID)
-	tokenstr := usecase.TokenUsecase{}.CreateToken(ctx, claimname)
+	tokenstr := th.UcCluster.TokenUC.CreateToken(ctx, claimname)
 	return c.JSONPretty(http.StatusOK, map[string]interface{}{"token": tokenstr}, "    ")
 }

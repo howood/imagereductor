@@ -16,13 +16,13 @@ type CacheAssessor struct {
 }
 
 // NewCacheAssessor creates a new CacheAssessor.
-func NewCacheAssessor(ctx context.Context, db int) *CacheAssessor {
+func NewCacheAssessor(db int) *CacheAssessor {
 	var I *CacheAssessor
-	log.Debug(ctx, "use:"+os.Getenv("CACHE_TYPE"))
+	log.Debug(context.Background(), "use:"+os.Getenv("CACHE_TYPE"))
 	switch os.Getenv("CACHE_TYPE") {
 	case "redis":
 		I = &CacheAssessor{
-			instance: caches.NewRedis(ctx, true, db),
+			instance: caches.NewRedis(true, db),
 		}
 	case "gocache":
 		I = &CacheAssessor{

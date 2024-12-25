@@ -13,13 +13,19 @@ import (
 	"github.com/howood/imagereductor/library/utils"
 )
 
-type ImageUsecase struct{}
+type ImageUsecase struct {
+	cloudstorage *storageservice.CloudStorageAssessor
+}
 
-//nolint:nolintlint,ireturn
-func (iu ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOperatorOption, storageKeyValue string) (string, []byte, error) {
+func NewImageUsecase() *ImageUsecase {
+	return &ImageUsecase{
+		cloudstorage: storageservice.NewCloudStorageAssessor(),
+	}
+}
+
+func (iu *ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOperatorOption, storageKeyValue string) (string, []byte, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
-	contenttype, imagebyte, err := cloudstorageassessor.Get(ctx, storageKeyValue)
+	contenttype, imagebyte, err := iu.cloudstorage.Get(ctx, storageKeyValue)
 	if err != nil {
 		return contenttype, imagebyte, err
 	}
@@ -40,33 +46,30 @@ func (iu ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOper
 	return contenttype, imagebyte, err
 }
 
-func (iu ImageUsecase) GetFile(ctx context.Context, storageKeyValue string) (string, []byte, error) {
+func (iu *ImageUsecase) GetFile(ctx context.Context, storageKeyValue string) (string, []byte, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
-	contenttype, filebyte, err := cloudstorageassessor.Get(ctx, storageKeyValue)
+	contenttype, filebyte, err := iu.cloudstorage.Get(ctx, storageKeyValue)
 	return contenttype, filebyte, err
 }
 
-func (iu ImageUsecase) GetFileStream(ctx context.Context, storageKeyValue string) (string, int, io.ReadCloser, error) {
+func (iu *ImageUsecase) GetFileStream(ctx context.Context, storageKeyValue string) (string, int, io.ReadCloser, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
-	objectInfo, err := cloudstorageassessor.GetObjectInfo(ctx, storageKeyValue)
+	objectInfo, err := iu.cloudstorage.GetObjectInfo(ctx, storageKeyValue)
 	if err != nil {
 		return "", 0, nil, err
 	}
 	contentLength := objectInfo.ContentLength
-	contenttype, response, err := cloudstorageassessor.GetByStreaming(ctx, storageKeyValue)
+	contenttype, response, err := iu.cloudstorage.GetByStreaming(ctx, storageKeyValue)
 	return contenttype, contentLength, response, err
 }
 
-func (iu ImageUsecase) GetFileInfo(ctx context.Context, storageKeyValue string) (entity.StorageObjectInfo, error) {
+func (iu *ImageUsecase) GetFileInfo(ctx context.Context, storageKeyValue string) (entity.StorageObjectInfo, error) {
 	// get from storage
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
-	objectInfo, err := cloudstorageassessor.GetObjectInfo(ctx, storageKeyValue)
+	objectInfo, err := iu.cloudstorage.GetObjectInfo(ctx, storageKeyValue)
 	return objectInfo, err
 }
 
-func (iu ImageUsecase) ConvertImage(ctx context.Context, imageoption actor.ImageOperatorOption, reader multipart.File) ([]byte, error) {
+func (iu *ImageUsecase) ConvertImage(ctx context.Context, imageoption actor.ImageOperatorOption, reader multipart.File) ([]byte, error) {
 	var convertedimagebyte []byte
 	var err error
 	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
@@ -89,14 +92,13 @@ func (iu ImageUsecase) ConvertImage(ctx context.Context, imageoption actor.Image
 	return convertedimagebyte, err
 }
 
-func (iu ImageUsecase) UploadToStorage(ctx context.Context, formKeyPath string, reader multipart.File, imagebyte []byte) error {
-	cloudstorageassessor := storageservice.NewCloudStorageAssessor(ctx)
+func (iu *ImageUsecase) UploadToStorage(ctx context.Context, formKeyPath string, reader multipart.File, imagebyte []byte) error {
 	if imagebyte != nil {
-		return cloudstorageassessor.Put(ctx, formKeyPath, bytes.NewReader(imagebyte))
+		return iu.cloudstorage.Put(ctx, formKeyPath, bytes.NewReader(imagebyte))
 	}
 	if _, err := reader.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
 	//nolint:forcetypeassert
-	return cloudstorageassessor.Put(ctx, formKeyPath, reader.(io.ReadSeeker))
+	return iu.cloudstorage.Put(ctx, formKeyPath, reader.(io.ReadSeeker))
 }
