@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/gabriel-vasile/mimetype v1.4.7
 	github.com/gofrs/uuid/v5 v5.3.0
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/labstack/echo-jwt/v4 v4.3.0
 	github.com/labstack/echo/v4 v4.13.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
