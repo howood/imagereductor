@@ -73,7 +73,11 @@ func (iu *ImageUsecase) ConvertImage(ctx context.Context, imageoption actor.Imag
 	var convertedimagebyte []byte
 	var err error
 	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
-		contenttype, _ := utils.GetContentTypeByReadSeeker(reader.(io.ReadSeeker))
+		re, ok := reader.(io.ReadSeeker)
+		if !ok {
+			return nil, err
+		}
+		contenttype, _ := utils.GetContentTypeByReadSeeker(re)
 		imageOperator := actor.NewImageOperator(
 			contenttype,
 			imageoption,

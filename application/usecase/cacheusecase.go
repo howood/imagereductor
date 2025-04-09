@@ -31,7 +31,7 @@ func (cu *CacheUsecase) GetCache(ctx context.Context, requesturi string) (bool, 
 		case string:
 			err = cachedcontent.GobDecode([]byte(xi))
 		default:
-			//nolint:goerr113
+			//nolint:err113
 			err = errors.New("get cache error")
 		}
 		if err != nil {

@@ -35,7 +35,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
-		//nolint:goerr113
+		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
 	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, requesturi) {
@@ -72,7 +72,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
-		//nolint:goerr113
+		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
 	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, requesturi) {
@@ -105,7 +105,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
-		//nolint:goerr113
+		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
 	// get from storage
@@ -141,7 +141,7 @@ func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
-		//nolint:goerr113
+		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
 	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, requesturi) {
@@ -287,7 +287,7 @@ func (irh ImageReductionHandler) setOptionValueInt(ctx context.Context, formvalu
 	val, err := strconv.Atoi(formvalue)
 	if err != nil {
 		log.Warn(ctx, err)
-		//nolint:goerr113
+		//nolint:err113
 		err = errors.New("invalid parameter")
 	}
 	return val, err
@@ -303,7 +303,7 @@ func (irh ImageReductionHandler) setOptionValueFloat(ctx context.Context, formva
 	val, err := strconv.ParseFloat(formvalue, 64)
 	if err != nil {
 		log.Warn(ctx, err)
-		//nolint:goerr113
+		//nolint:err113
 		err = errors.New("invalid parameter")
 	}
 	return val, err
@@ -319,7 +319,7 @@ func (irh ImageReductionHandler) getCropParam(ctx context.Context, cropparam str
 	}
 	crops := strings.Split(cropparam, ",")
 	if len(crops) != 4 {
-		//nolint:goerr113
+		//nolint:err113
 		return [4]int{}, errors.New("crop parameters must need four with comma like : 111,222,333,444")
 	}
 	intslicecrops := make([]int, 0)
@@ -327,7 +327,7 @@ func (irh ImageReductionHandler) getCropParam(ctx context.Context, cropparam str
 		intcrop, err := strconv.Atoi(crop)
 		if err != nil {
 			log.Warn(ctx, err)
-			//nolint:goerr113
+			//nolint:err113
 			err = errors.New("invalid crop parameter")
 			return [4]int{}, err
 		}

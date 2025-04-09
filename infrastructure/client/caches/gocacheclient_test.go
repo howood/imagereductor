@@ -1,7 +1,6 @@
 package caches_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -14,7 +13,7 @@ func Test_GoCacheClient(t *testing.T) {
 
 	setkey := "testkey"
 	setdata := "setdata"
-	ctx := context.Background()
+	ctx := t.Context()
 	client := caches.NewGoCacheClient()
 	if err := client.Set(ctx, setkey, setdata, 60*time.Second); err != nil {
 		t.Fatal(err)
