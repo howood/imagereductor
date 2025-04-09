@@ -4,19 +4,19 @@ update:
 	go mod tidy
 
 install:
-	cd /go/src/github.com/howood/imagereductor/imagereductor && export GO111MODULE=on && go install
+	cd /go/src/github.com/howood/imagereductor/imagereductor && go install
 
 run:
-	export GO111MODULE=on && go run ./imagereductor/imagereductor.go -v
+	go run ./imagereductor/imagereductor.go -v
 
 test:
-	export GO111MODULE=on && go test ./...
+	go test ./...
 
 testv:
-	export GO111MODULE=on && go test ./... -v
+	go test ./... -v
 
 lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.62.2 &&  \
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.0.2 &&  \
 	./bin/golangci-lint run ./...
 
 fmt:

@@ -15,7 +15,7 @@ ADD go.sum /go/src/github.com/howood/imagereductor/go.sum
 
 RUN \
      cd /go/src/github.com/howood/imagereductor/imagereductor &&  \
-     export GO111MODULE=on && CGO_ENABLED=0 go install
+    CGO_ENABLED=0 go install
 
 
 FROM busybox
