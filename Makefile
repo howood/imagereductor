@@ -3,6 +3,9 @@
 update:
 	go mod tidy
 
+upgrade:
+	go get -u ./...
+
 install:
 	cd /go/src/github.com/howood/imagereductor/imagereductor && go install
 
