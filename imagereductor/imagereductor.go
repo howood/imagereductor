@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/howood/imagereductor/application/actor"
@@ -13,6 +14,13 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/time/rate"
+)
+
+const (
+	ipAddressRateLimitBurst        = 100
+	ipAddressRateLimitCleanupTTL   = 15 * time.Minute
+	ipAddressRateLimitCleanupEvery = 5 * time.Minute
 )
 
 func main() {
@@ -20,11 +28,23 @@ func main() {
 
 	usecaseCluster := uccluster.NewUsecaseCluster()
 	baseHandler := handler.BaseHandler{UcCluster: usecaseCluster}
+	ipLimiter := custommiddleware.NewRateLimiter(custommiddleware.RateLimitConfig{
+		Rate:     rate.Every(time.Second),
+		Burst:    ipAddressRateLimitBurst,
+		KeyFunc:  custommiddleware.IPKeyFunc,
+		ErrorMsg: "Too many requests from your IP",
+		Skipper: func(c echo.Context) bool {
+			return c.RealIP() == "127.0.0.1"
+		},
+		CleanupTTL:   ipAddressRateLimitCleanupTTL,
+		CleanupEvery: ipAddressRateLimitCleanupEvery,
+	})
 
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
+	e.Use(ipLimiter.Middleware())
 
 	if os.Getenv("ADMIN_MODE") == "enable" {
 		e.GET("/token", handler.TokenHandler{BaseHandler: baseHandler}.Request, custommiddleware.IPRestriction())
