@@ -22,7 +22,9 @@ func NewCacheUsecase() *CacheUsecase {
 
 //nolint:ireturn
 func (cu *CacheUsecase) GetCache(ctx context.Context, requesturi string) (bool, repository.CachedContentRepository, error) {
-	if cachedvalue, cachedfound := cu.cacheAssessor.Get(ctx, requesturi); cachedfound {
+	if cachedvalue, cachedfound, err := cu.cacheAssessor.Get(ctx, requesturi); err != nil {
+		return false, nil, err
+	} else if cachedfound {
 		cachedcontent := actor.NewCachedContentOperator()
 		var err error
 		switch xi := cachedvalue.(type) {

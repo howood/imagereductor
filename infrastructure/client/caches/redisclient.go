@@ -81,17 +81,17 @@ func (i *RedisInstance) Set(ctx context.Context, key string, value interface{}, 
 }
 
 // Get gets from cache.
-func (i *RedisInstance) Get(ctx context.Context, key string) (interface{}, bool) {
+func (i *RedisInstance) Get(ctx context.Context, key string) (interface{}, bool, error) {
 	cachedvalue, err := i.client.Get(ctx, key).Result()
 	log.Debug(ctx, "-----GET----")
 	log.Debug(ctx, key)
 	if errors.Is(err, redis.Nil) {
-		return nil, false
+		return nil, false, nil
 	}
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
-	return cachedvalue, true
+	return cachedvalue, true, nil
 }
 
 // Del deletes from cache.

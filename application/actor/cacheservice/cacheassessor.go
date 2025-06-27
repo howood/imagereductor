@@ -35,17 +35,21 @@ func NewCacheAssessor(db int) *CacheAssessor {
 }
 
 // Get returns cache contents.
-func (ca *CacheAssessor) Get(ctx context.Context, index string) (interface{}, bool) {
+func (ca *CacheAssessor) Get(ctx context.Context, index string) (interface{}, bool, error) {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return
 		}
 	}()
-	cachedvalue, cachedfound := ca.instance.Get(ctx, index)
-	if cachedfound {
-		return cachedvalue, true
+	cachedvalue, cachedfound, err := ca.instance.Get(ctx, index)
+	if err != nil {
+		log.Error(ctx, "Cache Get Error", err)
+		return nil, false, err
 	}
-	return "", false
+	if cachedfound {
+		return cachedvalue, true, nil
+	}
+	return "", false, nil
 }
 
 // Set puts cache contents.
