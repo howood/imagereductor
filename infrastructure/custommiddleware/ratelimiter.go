@@ -3,11 +3,17 @@ package custommiddleware
 import (
 	"net/http"
 	"sync"
-
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/time/rate"
+)
+
+const (
+	// DefaultCleanupTTL is the default cleanup duration for unused limiters.
+	DefaultCleanupTTL = 10 * time.Second
+	// DefaultCleanupEvery is the default interval for running the cleanup routine.
+	DefaultCleanupEvery = 5 * time.Minute
 )
 
 type limiterEntry struct {
@@ -41,15 +47,15 @@ func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 		config.ErrorMsg = "Rate limit exceeded"
 	}
 	if config.Skipper == nil {
-		config.Skipper = func(c echo.Context) bool {
+		config.Skipper = func(_ echo.Context) bool {
 			return false
 		}
 	}
 	if config.CleanupTTL == 0 {
-		config.CleanupTTL = 10 * time.Minute
+		config.CleanupTTL = DefaultCleanupTTL
 	}
 	if config.CleanupEvery == 0 {
-		config.CleanupEvery = 5 * time.Minute
+		config.CleanupEvery = DefaultCleanupEvery
 	}
 
 	rl := &RateLimiter{
