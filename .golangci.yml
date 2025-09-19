@@ -12,6 +12,7 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
+    - wsl_v5
   settings:
     funlen:
       statements: 45

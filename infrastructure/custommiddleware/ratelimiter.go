@@ -68,6 +68,25 @@ func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 	return rl
 }
 
+func (rl *RateLimiter) Middleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if rl.config.Skipper(c) {
+				return next(c)
+			}
+
+			key := rl.config.KeyFunc(c)
+			limiter := rl.getLimiter(key)
+
+			if !limiter.Allow() {
+				return echo.NewHTTPError(http.StatusTooManyRequests, rl.config.ErrorMsg)
+			}
+
+			return next(c)
+		}
+	}
+}
+
 func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 	now := time.Now()
 	rl.mutex.RLock()
@@ -111,25 +130,6 @@ func (rl *RateLimiter) cleanup() {
 		}
 	}
 	rl.mutex.Unlock()
-}
-
-func (rl *RateLimiter) Middleware() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if rl.config.Skipper(c) {
-				return next(c)
-			}
-
-			key := rl.config.KeyFunc(c)
-			limiter := rl.getLimiter(key)
-
-			if !limiter.Allow() {
-				return echo.NewHTTPError(http.StatusTooManyRequests, rl.config.ErrorMsg)
-			}
-
-			return next(c)
-		}
-	}
 }
 
 func IPKeyFunc(c echo.Context) string {
