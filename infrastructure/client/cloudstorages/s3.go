@@ -37,8 +37,10 @@ func NewS3() *S3Instance {
 	var cfg aws.Config
 	var err error
 
-	configOptions := []func(*config.LoadOptions) error{
-		config.WithRegion(os.Getenv("AWS_S3_REGION")),
+	configOptions := []func(*config.LoadOptions) error{}
+
+	if os.Getenv("AWS_S3_REGION") != "" {
+		configOptions = append(configOptions, config.WithRegion(os.Getenv("AWS_S3_REGION")))
 	}
 
 	// 認証情報の設定
