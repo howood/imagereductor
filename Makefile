@@ -19,11 +19,11 @@ testv:
 	go test ./... -v
 
 lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.0.2 &&  \
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.4.0 &&  \
 	./bin/golangci-lint run ./...
 
 fmt:
-	go install golang.org/x/tools/cmd/goimports@v0.28.0
-	go install mvdan.cc/gofumpt@v0.7.0
+	go install golang.org/x/tools/cmd/goimports@v0.37.0
+	go install mvdan.cc/gofumpt@v0.9.1
 	goimports -w .
 	gofumpt -w .

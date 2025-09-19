@@ -46,15 +46,6 @@ func NewGCS() *GCSInstance {
 	return I
 }
 
-func (gcsinstance *GCSInstance) init(ctx context.Context) {
-	if _, exitstserr := gcsinstance.client.Bucket(GcsBucketUploadfiles).Attrs(ctx); exitstserr != nil {
-		if err := gcsinstance.client.Bucket(GcsBucketUploadfiles).Create(ctx, gcsProjectID, nil); err != nil {
-			log.Debug(ctx, "***CreateError****")
-			log.Debug(ctx, err)
-		}
-	}
-}
-
 // Put puts to storage.
 func (gcsinstance *GCSInstance) Put(ctx context.Context, bucket string, path string, file io.ReadSeeker) error {
 	bytes, err := io.ReadAll(file)
@@ -156,4 +147,13 @@ func (gcsinstance *GCSInstance) List(ctx context.Context, bucket string, key str
 func (gcsinstance *GCSInstance) Delete(ctx context.Context, bucket string, key string) error {
 	err := gcsinstance.client.Bucket(bucket).Object(key).Delete(ctx)
 	return err
+}
+
+func (gcsinstance *GCSInstance) init(ctx context.Context) {
+	if _, exitstserr := gcsinstance.client.Bucket(GcsBucketUploadfiles).Attrs(ctx); exitstserr != nil {
+		if err := gcsinstance.client.Bucket(GcsBucketUploadfiles).Create(ctx, gcsProjectID, nil); err != nil {
+			log.Debug(ctx, "***CreateError****")
+			log.Debug(ctx, err)
+		}
+	}
 }

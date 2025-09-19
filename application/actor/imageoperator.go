@@ -114,6 +114,27 @@ func (im *imageCreator) Process(ctx context.Context) error {
 	}
 }
 
+// ImageByte get image bytes.
+func (im *imageCreator) ImageByte(_ context.Context) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	var err error
+	switch im.object.ContentType {
+	case "image/jpeg":
+		err = jpeg.Encode(buf, im.object.Dst, im.jpegOption())
+	case "image/png":
+		err = png.Encode(buf, im.object.Dst)
+	case "image/gif":
+		err = gif.Encode(buf, im.object.Dst, nil)
+	default:
+		//nolint:err113
+		err = errors.New("invalid format")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // resize images.
 func (im *imageCreator) resize() error {
 	rect := image.Rect(0, 0, im.object.DstX, im.object.DstY)
@@ -189,27 +210,6 @@ func (im *imageCreator) rotate(ctx context.Context) error {
 		return errors.New("invalid Rotate Parameter")
 	}
 	return nil
-}
-
-// ImageByte get image bytes.
-func (im *imageCreator) ImageByte(_ context.Context) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	var err error
-	switch im.object.ContentType {
-	case "image/jpeg":
-		err = jpeg.Encode(buf, im.object.Dst, im.jpegOption())
-	case "image/png":
-		err = png.Encode(buf, im.object.Dst)
-	case "image/gif":
-		err = gif.Encode(buf, im.object.Dst, nil)
-	default:
-		//nolint:err113
-		err = errors.New("invalid format")
-	}
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
 // scale image.

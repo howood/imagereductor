@@ -1,4 +1,4 @@
-FROM golang:1.24 AS build-env
+FROM golang:1.25 AS build-env
 
 WORKDIR /go/src/github.com/howood/imagereductor
 
@@ -14,7 +14,7 @@ ADD go.sum /go/src/github.com/howood/imagereductor/go.sum
 
 
 RUN \
-     cd /go/src/github.com/howood/imagereductor/imagereductor &&  \
+    cd /go/src/github.com/howood/imagereductor/imagereductor &&  \
     CGO_ENABLED=0 go install
 
 
