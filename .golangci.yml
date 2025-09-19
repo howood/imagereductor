@@ -11,6 +11,7 @@ linters:
     - tagliatelle
     - varnamelen
     - wrapcheck
+    - noinlineerr
     - wsl
     - wsl_v5
   settings:
@@ -29,6 +30,11 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - path: library/utils/
+        linters:
+          - revive
+        text: "var-naming"
 formatters:
   enable:
     - gci

@@ -76,22 +76,6 @@ func NewS3() *S3Instance {
 	return instance
 }
 
-func (s3instance *S3Instance) init(ctx context.Context) {
-	_, bucketerr := s3instance.client.HeadBucket(ctx, &s3.HeadBucketInput{
-		Bucket: aws.String(S3BucketUploadfiles),
-	})
-	if bucketerr != nil {
-		result, err := s3instance.client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(S3BucketUploadfiles),
-		})
-		if err != nil {
-			log.Debug(ctx, "***CreateError****")
-			log.Debug(ctx, err)
-			log.Debug(ctx, result)
-		}
-	}
-}
-
 // Put puts to storage.
 func (s3instance *S3Instance) Put(ctx context.Context, bucket string, path string, file io.ReadSeeker) error {
 	// ファイルのオフセットを先頭に戻す
@@ -252,4 +236,20 @@ func (s3instance *S3Instance) getContentType(ctx context.Context, out io.ReadSee
 	}
 	log.Debug(ctx, contentType)
 	return contentType, nil
+}
+
+func (s3instance *S3Instance) init(ctx context.Context) {
+	_, bucketerr := s3instance.client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(S3BucketUploadfiles),
+	})
+	if bucketerr != nil {
+		result, err := s3instance.client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(S3BucketUploadfiles),
+		})
+		if err != nil {
+			log.Debug(ctx, "***CreateError****")
+			log.Debug(ctx, err)
+			log.Debug(ctx, result)
+		}
+	}
 }
