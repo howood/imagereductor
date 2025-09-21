@@ -3,11 +3,13 @@ package cloudstorages
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -18,83 +20,104 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
-// S3BucketUploadfiles is bucket to upload.
-//
 //nolint:gochecknoglobals
 var S3BucketUploadfiles = os.Getenv("AWS_S3_BUKET")
+
+// S3Config defines configuration for S3Instance.
+type S3Config struct {
+	Region    string
+	Endpoint  string
+	UseLocal  bool
+	AccessKey string
+	SecretKey string
+	Bucket    string
+	Timeout   time.Duration // 0 means no timeout
+}
+
+// LoadS3ConfigFromEnv builds config from environment variables (backward compatibility helper).
+func LoadS3ConfigFromEnv() S3Config {
+	return S3Config{
+		Region:    os.Getenv("AWS_S3_REGION"),
+		Endpoint:  os.Getenv("AWS_S3_ENDPOINT"),
+		UseLocal:  os.Getenv("AWS_S3_LOCALUSE") != "",
+		AccessKey: os.Getenv("AWS_S3_ACCESSKEY"),
+		SecretKey: os.Getenv("AWS_S3_SECRETKEY"),
+		Bucket:    os.Getenv("AWS_S3_BUKET"),
+		Timeout:   0,
+	}
+}
 
 // S3Instance struct.
 type S3Instance struct {
 	client *s3.Client
+	cfg    S3Config
 }
 
-// NewS3 creates a new S3Instance.
-func NewS3() *S3Instance {
-	ctx := context.Background()
-	region := os.Getenv("AWS_S3_REGION")
-	endpoint := os.Getenv("AWS_S3_ENDPOINT")
+// NewS3WithConfig is the new constructor returning error.
+func NewS3WithConfig(ctx context.Context, cfgIn S3Config) (*S3Instance, error) { //nolint:cyclop
+	if cfgIn.Bucket == "" {
+		return nil, errors.New("s3 bucket name is empty")
+	}
 	log.Debug(ctx, "----S3 DNS----")
-	log.Debug(ctx, region)
-	log.Debug(ctx, endpoint)
-
-	var cfg aws.Config
-	var err error
-
-	configOptions := []func(*config.LoadOptions) error{}
-
-	if region != "" {
-		configOptions = append(configOptions, config.WithRegion(region))
+	log.Debug(ctx, cfgIn.Region)
+	log.Debug(ctx, cfgIn.Endpoint)
+	opts := []func(*config.LoadOptions) error{}
+	if cfgIn.Region != "" {
+		opts = append(opts, config.WithRegion(cfgIn.Region))
 	}
-
-	// 認証情報の設定
-	accessKey := os.Getenv("AWS_S3_ACCESSKEY")
-	secretKey := os.Getenv("AWS_S3_SECRETKEY")
-	if accessKey != "" && secretKey != "" {
-		configOptions = append(configOptions, config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				accessKey,
-				secretKey,
-				"",
-			),
-		))
+	if cfgIn.AccessKey != "" && cfgIn.SecretKey != "" {
+		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfgIn.AccessKey, cfgIn.SecretKey, "")))
 	}
-
-	cfg, err = config.LoadDefaultConfig(ctx, configOptions...)
+	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
-		log.Debug(ctx, "Failed to load AWS config:")
-		log.Debug(ctx, err)
-		panic(err)
+		return nil, fmt.Errorf("load aws config: %w", err)
 	}
-
 	var client *s3.Client
-
-	if os.Getenv("AWS_S3_LOCALUSE") != "" {
+	if cfgIn.UseLocal {
 		log.Debug(ctx, "-----use local-----")
-		client = s3.NewFromConfig(cfg, func(o *s3.Options) {
-			o.BaseEndpoint = aws.String(endpoint)
+		client = s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+			if cfgIn.Endpoint != "" {
+				o.BaseEndpoint = aws.String(cfgIn.Endpoint)
+			}
 			o.UsePathStyle = true
 		})
 	} else {
-		client = s3.NewFromConfig(cfg)
+		client = s3.NewFromConfig(awsCfg)
 	}
+	inst := &S3Instance{client: client, cfg: cfgIn}
+	inst.init(ctx)
+	return inst, nil
+}
 
-	instance := &S3Instance{client: client}
-	instance.init(ctx)
-	return instance
+// NewS3 keeps backward compatible panic behavior.
+func NewS3() *S3Instance { //nolint:forcetypeassert
+	ctx := context.Background()
+	inst, err := NewS3WithConfig(ctx, LoadS3ConfigFromEnv())
+	if err != nil {
+		panic(err)
+	}
+	return inst
+}
+
+// withTimeout attaches timeout if configured.
+func (s *S3Instance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if s.cfg.Timeout > 0 {
+		return context.WithTimeout(ctx, s.cfg.Timeout)
+	}
+	return ctx, func() {}
 }
 
 // Put puts to storage.
-func (s3instance *S3Instance) Put(ctx context.Context, bucket string, path string, file io.ReadSeeker) error {
+func (s3instance *S3Instance) Put(ctx context.Context, bucket, path string, file io.ReadSeeker) error {
+	ctx, cancel := s3instance.withTimeout(ctx)
+	defer cancel()
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("put seek start: %w", err)
 	}
-
 	mimetype, err := s3instance.getContentType(ctx, file)
 	if err != nil {
 		return fmt.Errorf("detect content type: %w", err)
 	}
-
-	// getContentType 内で先頭へ戻しているため再Seek不要
 	result, err := s3instance.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(path),
@@ -108,25 +131,21 @@ func (s3instance *S3Instance) Put(ctx context.Context, bucket string, path strin
 	return nil
 }
 
-// Get gets from storage.
-func (s3instance *S3Instance) Get(ctx context.Context, bucket string, key string) (string, []byte, error) { // バイト配列取得
+// Get gets from storage and returns bytes.
+func (s3instance *S3Instance) Get(ctx context.Context, bucket, key string) (string, []byte, error) {
+	ctx, cancel := s3instance.withTimeout(ctx)
+	defer cancel()
 	log.Debug(ctx, bucket)
 	log.Debug(ctx, key)
-
-	response, err := s3instance.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
+	response, err := s3instance.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil {
 		return "", nil, fmt.Errorf("get object bucket=%s key=%s: %w", bucket, key, err)
 	}
-
 	contenttype := ""
 	if response.ContentType != nil {
 		contenttype = *response.ContentType
 	}
 	defer response.Body.Close()
-
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, response.Body); err != nil {
 		return "", nil, fmt.Errorf("read object body bucket=%s key=%s: %w", bucket, key, err)
@@ -135,19 +154,14 @@ func (s3instance *S3Instance) Get(ctx context.Context, bucket string, key string
 	return contenttype, buf.Bytes(), nil
 }
 
-// GetByStreaming gets from storage by streaming.
-func (s3instance *S3Instance) GetByStreaming(ctx context.Context, bucket string, key string) (string, io.ReadCloser, error) { // ストリーミング取得
+// GetByStreaming gets from storage by streaming (no timeout).
+func (s3instance *S3Instance) GetByStreaming(ctx context.Context, bucket, key string) (string, io.ReadCloser, error) {
 	log.Debug(ctx, bucket)
 	log.Debug(ctx, key)
-
-	response, err := s3instance.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
+	response, err := s3instance.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil {
 		return "", nil, fmt.Errorf("get object(stream) bucket=%s key=%s: %w", bucket, key, err)
 	}
-
 	contenttype := ""
 	if response.ContentType != nil {
 		contenttype = *response.ContentType
@@ -156,20 +170,17 @@ func (s3instance *S3Instance) GetByStreaming(ctx context.Context, bucket string,
 	return contenttype, response.Body, nil
 }
 
-// GetObjectInfo gets from storage.
-func (s3instance *S3Instance) GetObjectInfo(ctx context.Context, bucket string, key string) (entity.StorageObjectInfo, error) {
+// GetObjectInfo gets object head metadata.
+func (s3instance *S3Instance) GetObjectInfo(ctx context.Context, bucket, key string) (entity.StorageObjectInfo, error) {
+	ctx, cancel := s3instance.withTimeout(ctx)
+	defer cancel()
 	log.Debug(ctx, bucket)
 	log.Debug(ctx, key)
-
 	so := entity.StorageObjectInfo{}
-	response, err := s3instance.client.HeadObject(ctx, &s3.HeadObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
+	response, err := s3instance.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil {
 		return so, fmt.Errorf("head object bucket=%s key=%s: %w", bucket, key, err)
 	}
-
 	if response.ContentType != nil {
 		so.ContentType = *response.ContentType
 	}
@@ -180,24 +191,20 @@ func (s3instance *S3Instance) GetObjectInfo(ctx context.Context, bucket string, 
 }
 
 // List get list from storage.
-func (s3instance *S3Instance) List(ctx context.Context, bucket string, key string) ([]string, error) {
+func (s3instance *S3Instance) List(ctx context.Context, bucket, key string) ([]string, error) {
+	ctx, cancel := s3instance.withTimeout(ctx)
+	defer cancel()
 	log.Debug(ctx, fmt.Sprintf("ListDirectory %s : %s", bucket, key))
 	if key != "" {
 		key = strings.TrimPrefix(key, "/")
 	}
-
 	var names []string
-	paginator := s3.NewListObjectsV2Paginator(s3instance.client, &s3.ListObjectsV2Input{
-		Bucket: aws.String(bucket),
-		Prefix: aws.String(key),
-	})
-
+	paginator := s3.NewListObjectsV2Paginator(s3instance.client, &s3.ListObjectsV2Input{Bucket: aws.String(bucket), Prefix: aws.String(key)})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
 			return names, fmt.Errorf("list objects bucket=%s prefix=%s: %w", bucket, key, err)
 		}
-
 		for _, obj := range page.Contents {
 			if obj.Key == nil {
 				continue
@@ -205,16 +212,14 @@ func (s3instance *S3Instance) List(ctx context.Context, bucket string, key strin
 			names = append(names, *obj.Key)
 		}
 	}
-
 	return names, nil
 }
 
 // Delete deletes from storage.
-func (s3instance *S3Instance) Delete(ctx context.Context, bucket string, key string) error {
-	result, err := s3instance.client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
+func (s3instance *S3Instance) Delete(ctx context.Context, bucket, key string) error {
+	ctx, cancel := s3instance.withTimeout(ctx)
+	defer cancel()
+	result, err := s3instance.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil {
 		return fmt.Errorf("delete object bucket=%s key=%s: %w", bucket, key, err)
 	}
@@ -223,7 +228,6 @@ func (s3instance *S3Instance) Delete(ctx context.Context, bucket string, key str
 }
 
 func (s3instance *S3Instance) getContentType(ctx context.Context, rs io.ReadSeeker) (string, error) {
-	// 常に先頭から判定し、終了後は先頭へ戻す（呼び出し側の余計なSeekを不要に）
 	if _, err := rs.Seek(0, io.SeekStart); err != nil {
 		return "", fmt.Errorf("content-type seek start: %w", err)
 	}
@@ -252,17 +256,21 @@ func (s3instance *S3Instance) getContentType(ctx context.Context, rs io.ReadSeek
 	return contentType, nil
 }
 
-func (s3instance *S3Instance) init(ctx context.Context) {
-	_, bucketerr := s3instance.client.HeadBucket(ctx, &s3.HeadBucketInput{
-		Bucket: aws.String(S3BucketUploadfiles),
-	})
-	if bucketerr != nil {
-		result, err := s3instance.client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(S3BucketUploadfiles),
-		})
-		if err != nil {
+func (s3instance *S3Instance) init(ctx context.Context) { // bucket存在確認と必要なら作成（上部で一度だけ定義）
+	bucket := s3instance.cfg.Bucket
+	if bucket == "" {
+		bucket = S3BucketUploadfiles
+		s3instance.cfg.Bucket = bucket
+	}
+	if bucket == "" { // どこにも設定がない
+		log.Warn(ctx, "bucket name empty; skip init")
+		return
+	}
+	if _, err := s3instance.client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)}); err != nil {
+		result, createErr := s3instance.client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket)})
+		if createErr != nil {
 			log.Debug(ctx, "***CreateError****")
-			log.Debug(ctx, err)
+			log.Debug(ctx, createErr)
 			log.Debug(ctx, result)
 		}
 	}
