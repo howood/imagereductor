@@ -58,7 +58,7 @@ type S3Instance struct {
 }
 
 // NewS3WithConfig is the new constructor returning error.
-func NewS3WithConfig(ctx context.Context, cfgIn S3Config) (*S3Instance, error) { //nolint:cyclop
+func NewS3WithConfig(ctx context.Context, cfgIn S3Config) (*S3Instance, error) {
 	if cfgIn.Bucket == "" {
 		return nil, ErrS3BucketEmpty
 	}
@@ -94,7 +94,7 @@ func NewS3WithConfig(ctx context.Context, cfgIn S3Config) (*S3Instance, error) {
 }
 
 // NewS3 keeps backward compatible panic behavior.
-func NewS3() *S3Instance { //nolint:forcetypeassert
+func NewS3() *S3Instance {
 	ctx := context.Background()
 	inst, err := NewS3WithConfig(ctx, LoadS3ConfigFromEnv())
 	if err != nil {
@@ -274,9 +274,9 @@ func (s3instance *S3Instance) init(ctx context.Context) { // bucket存在確認�
 }
 
 // withTimeout attaches timeout if configured.
-func (s *S3Instance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	if s.cfg.Timeout > 0 {
-		return context.WithTimeout(ctx, s.cfg.Timeout)
+func (s3instance *S3Instance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if s3instance.cfg.Timeout > 0 {
+		return context.WithTimeout(ctx, s3instance.cfg.Timeout)
 	}
 	return ctx, func() {}
 }

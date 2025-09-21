@@ -65,7 +65,7 @@ func NewGCSWithConfig(ctx context.Context, cfg GCSConfig) (*GCSInstance, error) 
 }
 
 // NewGCS keeps backward compatibility (panic on failure) like previous version.
-func NewGCS() *GCSInstance { //nolint:forcetypeassert
+func NewGCS() *GCSInstance {
 	ctx := context.Background()
 	inst, err := NewGCSWithConfig(ctx, LoadGCSConfigFromEnv())
 	if err != nil {
@@ -204,9 +204,9 @@ func (gcsinstance *GCSInstance) init(ctx context.Context) {
 }
 
 // withTimeout attaches timeout if configured.
-func (g *GCSInstance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	if g.cfg.Timeout > 0 {
-		return context.WithTimeout(ctx, g.cfg.Timeout)
+func (gcsinstance *GCSInstance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if gcsinstance.cfg.Timeout > 0 {
+		return context.WithTimeout(ctx, gcsinstance.cfg.Timeout)
 	}
 	return ctx, func() {}
 }
