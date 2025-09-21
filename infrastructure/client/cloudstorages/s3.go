@@ -20,8 +20,7 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
-//nolint:gochecknoglobals
-var S3BucketUploadfiles = os.Getenv("AWS_S3_BUKET")
+// （後方互換目的で残されていたグローバルバケット変数は廃止。config経由に統一）
 
 // S3Config defines configuration for S3Instance.
 type S3Config struct {
@@ -51,6 +50,11 @@ func LoadS3ConfigFromEnv() S3Config {
 type S3Instance struct {
 	client *s3.Client
 	cfg    S3Config
+}
+
+// GetBucket returns configured bucket name.
+func (s3instance *S3Instance) GetBucket() string {
+	return s3instance.cfg.Bucket
 }
 
 // NewS3WithConfig is the new constructor returning error.
@@ -256,13 +260,9 @@ func (s3instance *S3Instance) getContentType(ctx context.Context, rs io.ReadSeek
 	return contentType, nil
 }
 
-func (s3instance *S3Instance) init(ctx context.Context) { // bucket存在確認と必要なら作成（上部で一度だけ定義）
+func (s3instance *S3Instance) init(ctx context.Context) { // bucket存在確認と必要なら作成
 	bucket := s3instance.cfg.Bucket
-	if bucket == "" {
-		bucket = S3BucketUploadfiles
-		s3instance.cfg.Bucket = bucket
-	}
-	if bucket == "" { // どこにも設定がない
+	if bucket == "" { // config上未設定なら何もしない(後方互換のenv fallbackは削除)
 		log.Warn(ctx, "bucket name empty; skip init")
 		return
 	}

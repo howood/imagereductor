@@ -17,4 +17,5 @@ type StorageInstance interface {
 	GetObjectInfo(ctx context.Context, bucket string, key string) (entity.StorageObjectInfo, error)
 	List(ctx context.Context, bucket string, key string) ([]string, error)
 	Delete(ctx context.Context, bucket string, key string) error
+	GetBucket() string
 }

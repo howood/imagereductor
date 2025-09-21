@@ -16,15 +16,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-// GcsBucketUploadfiles is bucket to upload.
-//
-//nolint:gochecknoglobals
-var GcsBucketUploadfiles = os.Getenv("GCS_BUKET")
-
-// GcsProjectID is GCS Project ID.
-//
-//nolint:gochecknoglobals
-var gcsProjectID = os.Getenv("GCS_PROJECTID")
+// （後方互換目的で保持していたGCS用のグローバル環境変数参照は廃止し、明示的なconfig取得に統一）
 
 // GCSInstance struct.
 // GCSConfig defines configuration for GCSInstance (similar to S3Config for S3).
@@ -37,8 +29,8 @@ type GCSConfig struct {
 // LoadGCSConfigFromEnv builds config from environment variables.
 func LoadGCSConfigFromEnv() GCSConfig {
 	return GCSConfig{
-		ProjectID: gcsProjectID,
-		Bucket:    GcsBucketUploadfiles,
+		ProjectID: os.Getenv("GCS_PROJECTID"),
+		Bucket:    os.Getenv("GCS_BUKET"),
 		Timeout:   0,
 	}
 }
@@ -46,6 +38,11 @@ func LoadGCSConfigFromEnv() GCSConfig {
 type GCSInstance struct {
 	client *storage.Client
 	cfg    GCSConfig
+}
+
+// GetBucket returns configured bucket name.
+func (gcsinstance *GCSInstance) GetBucket() string {
+	return gcsinstance.cfg.Bucket
 }
 
 // NewGCS creates a new GCSInstance.
@@ -192,11 +189,7 @@ func (gcsinstance *GCSInstance) Delete(ctx context.Context, bucket string, key s
 
 func (gcsinstance *GCSInstance) init(ctx context.Context) {
 	bucket := gcsinstance.cfg.Bucket
-	if bucket == "" { // fallback to env (backward compatibility)
-		bucket = GcsBucketUploadfiles
-		gcsinstance.cfg.Bucket = bucket
-	}
-	if bucket == "" { // nothing configured
+	if bucket == "" {
 		log.Warn(ctx, "bucket name empty; skip init")
 		return
 	}
