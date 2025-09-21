@@ -16,6 +16,12 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// Sentinel errors (static) for validation (err113 compliant).
+var (
+	ErrGCSBucketEmpty    = errors.New("gcs bucket name is empty")
+	ErrGCSProjectIDEmpty = errors.New("gcs project id is empty")
+)
+
 // （後方互換目的で保持していたGCS用のグローバル環境変数参照は廃止し、明示的なconfig取得に統一）
 
 // GCSInstance struct.
@@ -40,19 +46,14 @@ type GCSInstance struct {
 	cfg    GCSConfig
 }
 
-// GetBucket returns configured bucket name.
-func (gcsinstance *GCSInstance) GetBucket() string {
-	return gcsinstance.cfg.Bucket
-}
-
 // NewGCS creates a new GCSInstance.
 // NewGCSWithConfig is new constructor returning error.
 func NewGCSWithConfig(ctx context.Context, cfg GCSConfig) (*GCSInstance, error) {
 	if cfg.Bucket == "" {
-		return nil, errors.New("gcs bucket name is empty")
+		return nil, ErrGCSBucketEmpty
 	}
 	if cfg.ProjectID == "" {
-		return nil, errors.New("gcs project id is empty")
+		return nil, ErrGCSProjectIDEmpty
 	}
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -71,14 +72,6 @@ func NewGCS() *GCSInstance { //nolint:forcetypeassert
 		panic(err)
 	}
 	return inst
-}
-
-// withTimeout attaches timeout if configured.
-func (g *GCSInstance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	if g.cfg.Timeout > 0 {
-		return context.WithTimeout(ctx, g.cfg.Timeout)
-	}
-	return ctx, func() {}
 }
 
 // Put puts to storage.
@@ -187,6 +180,11 @@ func (gcsinstance *GCSInstance) Delete(ctx context.Context, bucket string, key s
 	return nil
 }
 
+// GetBucket returns configured bucket name.
+func (gcsinstance *GCSInstance) GetBucket() string {
+	return gcsinstance.cfg.Bucket
+}
+
 func (gcsinstance *GCSInstance) init(ctx context.Context) {
 	bucket := gcsinstance.cfg.Bucket
 	if bucket == "" {
@@ -203,4 +201,12 @@ func (gcsinstance *GCSInstance) init(ctx context.Context) {
 			log.Debug(ctx, err)
 		}
 	}
+}
+
+// withTimeout attaches timeout if configured.
+func (g *GCSInstance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if g.cfg.Timeout > 0 {
+		return context.WithTimeout(ctx, g.cfg.Timeout)
+	}
+	return ctx, func() {}
 }

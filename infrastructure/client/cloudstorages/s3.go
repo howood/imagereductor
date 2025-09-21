@@ -20,6 +20,11 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 )
 
+// Sentinel errors for S3 validation.
+var (
+	ErrS3BucketEmpty = errors.New("s3 bucket name is empty")
+)
+
 // （後方互換目的で残されていたグローバルバケット変数は廃止。config経由に統一）
 
 // S3Config defines configuration for S3Instance.
@@ -52,15 +57,10 @@ type S3Instance struct {
 	cfg    S3Config
 }
 
-// GetBucket returns configured bucket name.
-func (s3instance *S3Instance) GetBucket() string {
-	return s3instance.cfg.Bucket
-}
-
 // NewS3WithConfig is the new constructor returning error.
 func NewS3WithConfig(ctx context.Context, cfgIn S3Config) (*S3Instance, error) { //nolint:cyclop
 	if cfgIn.Bucket == "" {
-		return nil, errors.New("s3 bucket name is empty")
+		return nil, ErrS3BucketEmpty
 	}
 	log.Debug(ctx, "----S3 DNS----")
 	log.Debug(ctx, cfgIn.Region)
@@ -101,14 +101,6 @@ func NewS3() *S3Instance { //nolint:forcetypeassert
 		panic(err)
 	}
 	return inst
-}
-
-// withTimeout attaches timeout if configured.
-func (s *S3Instance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	if s.cfg.Timeout > 0 {
-		return context.WithTimeout(ctx, s.cfg.Timeout)
-	}
-	return ctx, func() {}
 }
 
 // Put puts to storage.
@@ -231,6 +223,11 @@ func (s3instance *S3Instance) Delete(ctx context.Context, bucket, key string) er
 	return nil
 }
 
+// GetBucket returns configured bucket name.
+func (s3instance *S3Instance) GetBucket() string {
+	return s3instance.cfg.Bucket
+}
+
 func (s3instance *S3Instance) getContentType(ctx context.Context, rs io.ReadSeeker) (string, error) {
 	if _, err := rs.Seek(0, io.SeekStart); err != nil {
 		return "", fmt.Errorf("content-type seek start: %w", err)
@@ -238,7 +235,7 @@ func (s3instance *S3Instance) getContentType(ctx context.Context, rs io.ReadSeek
 	//nolint:mnd // 512 bytes for http.DetectContentType
 	buf := make([]byte, 512)
 	n, err := rs.Read(buf)
-	if err != nil && err != io.EOF { // EOFは許容
+	if err != nil && !errors.Is(err, io.EOF) { // EOFは許容
 		log.Warn(ctx, "data read error for content-type detection")
 		log.Warn(ctx, err)
 	}
@@ -274,4 +271,12 @@ func (s3instance *S3Instance) init(ctx context.Context) { // bucket存在確認�
 			log.Debug(ctx, result)
 		}
 	}
+}
+
+// withTimeout attaches timeout if configured.
+func (s *S3Instance) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if s.cfg.Timeout > 0 {
+		return context.WithTimeout(ctx, s.cfg.Timeout)
+	}
+	return ctx, func() {}
 }
