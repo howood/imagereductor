@@ -55,7 +55,7 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 | CACHE_TYPE |redis / gocache |
 | REDISHOST |x.x.x.x |
 | REDISPORT |6379 |
-| REDISTLS |use or empty |
+| REDISTLS |skipverify or empty |
 | REDISPASSWORD | |
 | CACHEDDB |0~ |
 | CACHEEXPIED |300 (seconds) |
