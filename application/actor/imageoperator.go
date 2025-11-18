@@ -242,7 +242,7 @@ func (im *imageCreator) transform(src image.Image, rect image.Rectangle, t f64.A
 func (im *imageCreator) brightness(src image.Image) *image.NRGBA {
 	lookup := make([]uint8, 256)
 	percentage := math.Min(math.Max(float64(im.option.Brightness), -100.0), 100.0)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		lookup[i] = uint8(utils.InRanged(float64(i)*(percentage/100.0), 0, 255))
 	}
 	return im.convertLuminance(src, lookup)
@@ -255,7 +255,7 @@ func (im *imageCreator) contrast(src image.Image) *image.NRGBA {
 	lookup := make([]uint8, 256)
 	percentage := math.Min(math.Max(float64(im.option.Contrast), -100.0), 100.0)
 	v := (100.0 + percentage) / 100.0
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		lookup[i] = uint8(utils.InRanged(((((float64(i)/255)-0.5)*v)+0.5)*255, 0, 255))
 	}
 	return im.convertLuminance(src, lookup)
@@ -267,7 +267,7 @@ func (im *imageCreator) contrast(src image.Image) *image.NRGBA {
 func (im *imageCreator) gamma(src image.Image) *image.NRGBA {
 	lookup := make([]uint8, 256)
 	e := 1.0 / math.Max(im.option.Gamma, 0.0001)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		lookup[i] = uint8(utils.InRanged(math.Pow(float64(i)/255.0, e)*255.0, 0, 255))
 	}
 	return im.convertLuminance(src, lookup)

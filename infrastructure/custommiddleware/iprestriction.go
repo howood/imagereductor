@@ -10,10 +10,13 @@ import (
 
 // IPRestriction permit access by IP address.
 var (
-	allowedNetworks      []*net.IPNet
+	//nolint:gochecknoglobals
+	allowedNetworks []*net.IPNet
+	//nolint:gochecknoglobals
 	ipRestrictionEnabled bool
 )
 
+//nolint:gochecknoinits
 func init() {
 	allowIPsEnv := os.Getenv("TOKENAPI_ALLOW_IPS")
 	if allowIPsEnv == "" {

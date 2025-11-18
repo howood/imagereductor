@@ -142,10 +142,10 @@ func checkPing(ctx context.Context, connectionkey int) error {
 
 func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error {
 	var tlsConfig *tls.Config
-	if os.Getenv("REDISTLS") == "use" {
+	if os.Getenv("REDISTLS") == "skipverify" {
 		tlsConfig = &tls.Config{
 			//nolint:gosec
-			InsecureSkipVerify: false,
+			InsecureSkipVerify: true,
 		}
 	}
 	redisConnectionMap[connectionkey] = redis.NewClient(&redis.Options{
