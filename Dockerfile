@@ -2,15 +2,15 @@ FROM golang:1.25 AS build-env
 
 WORKDIR /go/src/github.com/howood/imagereductor
 
-ADD application /go/src/github.com/howood/imagereductor/application
-ADD di /go/src/github.com/howood/imagereductor/di
-ADD domain /go/src/github.com/howood/imagereductor/domain
-ADD imagereductor /go/src/github.com/howood/imagereductor/imagereductor
-ADD infrastructure /go/src/github.com/howood/imagereductor/infrastructure
-ADD interfaces /go/src/github.com/howood/imagereductor/interfaces
-ADD library /go/src/github.com/howood/imagereductor/library
-ADD go.mod /go/src/github.com/howood/imagereductor/go.mod
-ADD go.sum /go/src/github.com/howood/imagereductor/go.sum
+COPY application /go/src/github.com/howood/imagereductor/application
+COPY di /go/src/github.com/howood/imagereductor/di
+COPY domain /go/src/github.com/howood/imagereductor/domain
+COPY imagereductor /go/src/github.com/howood/imagereductor/imagereductor
+COPY infrastructure /go/src/github.com/howood/imagereductor/infrastructure
+COPY interfaces /go/src/github.com/howood/imagereductor/interfaces
+COPY library /go/src/github.com/howood/imagereductor/library
+COPY go.mod /go/src/github.com/howood/imagereductor/go.mod
+COPY go.sum /go/src/github.com/howood/imagereductor/go.sum
 
 
 RUN \

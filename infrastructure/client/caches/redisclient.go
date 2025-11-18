@@ -145,7 +145,7 @@ func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error
 	if os.Getenv("REDISTLS") == "use" {
 		tlsConfig = &tls.Config{
 			//nolint:gosec
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: false,
 		}
 	}
 	redisConnectionMap[connectionkey] = redis.NewClient(&redis.Options{

@@ -24,7 +24,7 @@ var gocacheConnectionMap map[int]*cache.Cache
 //nolint:gochecknoinits
 func init() {
 	gocacheConnectionMap = make(map[int]*cache.Cache, 0)
-	for i := range NumInstance {
+	for i := 0; i < NumInstance; i++ {
 		gocacheConnectionMap[i] = cache.New(DefaultExpiration*time.Minute, PurgeExpiredTime*time.Minute)
 	}
 }
@@ -78,6 +78,6 @@ func (cc *GoCacheClient) getInstance(ctx context.Context, key string) *cache.Cac
 		hash = ((hash << 5) + hash) + uint32(c)
 	}
 	i := int(hash) % NumInstance
-	log.Info(ctx, fmt.Sprintf("get_instance: %d", i))
+	log.Debug(ctx, fmt.Sprintf("get_instance: %d", i))
 	return gocacheConnectionMap[i]
 }

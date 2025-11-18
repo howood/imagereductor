@@ -56,7 +56,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 	irh.setResponseHeader(
 		c,
 		irh.setNewLatsModified(),
-		strconv.Itoa(len(string(imagebyte))),
+		strconv.Itoa(len(imagebyte)),
 		irh.setExpires(time.Now()),
 		fmt.Sprintf("%v", ctx.Value(requestid.GetRequestIDKey())),
 	)

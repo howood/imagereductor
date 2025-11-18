@@ -15,7 +15,7 @@ import (
 // tokenExpired is token's expired.
 //
 //nolint:gochecknoglobals
-var tokenExpired = utils.GetOsEnv("TOKEN_EXPIED", "3600")
+var tokenExpired = utils.GetOsEnv("TOKEN_EXPIRED", "3600")
 
 // TokenSecret define token secrets.
 //
