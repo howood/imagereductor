@@ -13,6 +13,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"strings"
 
 	"github.com/howood/imagereductor/domain/entity"
 	"github.com/howood/imagereductor/domain/repository"
@@ -74,7 +75,7 @@ type subImager interface {
 func (im *imageCreator) Decode(ctx context.Context, src io.ReadSeeker) error {
 	var err error
 	im.object.Source, im.object.ImageName, err = image.Decode(src)
-	if err == nil {
+	if err == nil && strings.HasPrefix(im.object.ContentType, "image/jpeg") {
 		im.decodeExifOrientation(ctx, src)
 	}
 	if err == nil {
