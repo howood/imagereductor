@@ -20,7 +20,20 @@ var tokenExpired = utils.GetOsEnv("TOKEN_EXPIRED", "3600")
 // TokenSecret define token secrets.
 //
 //nolint:gochecknoglobals
-var TokenSecret = utils.GetOsEnv("TOKEN_SECRET", "secretsecretdsfdsfsdfdsfsdf")
+var TokenSecret = utils.GetOsEnv("TOKEN_SECRET", "")
+
+const minTokenSecretLength = 32
+
+//nolint:gochecknoinits
+func init() {
+	ctx := context.Background()
+	if TokenSecret == "" {
+		log.Fatal(ctx, "TOKEN_SECRET environment variable must be set for security")
+	}
+	if len(TokenSecret) < minTokenSecretLength {
+		log.Warn(ctx, "TOKEN_SECRET is too short. Recommend at least 32 characters for security")
+	}
+}
 
 // JwtOperator struct.
 type JwtOperator struct {
