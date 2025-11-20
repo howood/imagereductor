@@ -35,6 +35,9 @@ COPY --from=build-env /go/bin/imagereductor /usr/local/bin/imagereductor
 RUN chown appuser:appuser /usr/local/bin/imagereductor
 USER appuser
 
+# Set default port to 8080 (non-privileged port)
+ENV SERVER_PORT=8080
+
 # Expose default port
 EXPOSE 8080
 
