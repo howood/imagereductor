@@ -14,6 +14,8 @@ const (
 	DefaultCleanupTTL = 10 * time.Second
 	// DefaultCleanupEvery is the default interval for running the cleanup routine.
 	DefaultCleanupEvery = 5 * time.Minute
+	// DefaultMaxKeys is the default maximum number of keys to store.
+	DefaultMaxKeys = 10000
 )
 
 type limiterEntry struct {
@@ -29,6 +31,7 @@ type RateLimitConfig struct {
 	Skipper      func(c echo.Context) bool
 	CleanupTTL   time.Duration // How long to keep unused limiters
 	CleanupEvery time.Duration // How often to run cleanup
+	MaxKeys      int           // Maximum number of keys to store (0 = unlimited)
 }
 
 type RateLimiter struct {
@@ -56,6 +59,9 @@ func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 	}
 	if config.CleanupEvery == 0 {
 		config.CleanupEvery = DefaultCleanupEvery
+	}
+	if config.MaxKeys == 0 {
+		config.MaxKeys = DefaultMaxKeys
 	}
 
 	rl := &RateLimiter{
@@ -95,8 +101,15 @@ func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 
 	if !exists {
 		rl.mutex.Lock()
+		// Double-check after acquiring write lock
 		entry, exists = rl.limiters[key]
 		if !exists {
+			// Check if we've reached the maximum number of keys
+			if rl.config.MaxKeys > 0 && len(rl.limiters) >= rl.config.MaxKeys {
+				// Evict oldest entry (simple LRU)
+				rl.evictOldest()
+			}
+
 			entry = &limiterEntry{
 				limiter:    rate.NewLimiter(rl.config.Rate, rl.config.Burst),
 				lastAccess: now,
@@ -104,13 +117,34 @@ func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 			rl.limiters[key] = entry
 		}
 		rl.mutex.Unlock()
+	} else {
+		// Update last access time
+		rl.mutex.Lock()
+		entry.lastAccess = now
+		rl.mutex.Unlock()
 	}
-	// Update last access time
-	rl.mutex.Lock()
-	entry.lastAccess = now
-	rl.mutex.Unlock()
 
 	return entry.limiter
+}
+
+// evictOldest removes the oldest entry from the limiters map.
+// Must be called with write lock held.
+func (rl *RateLimiter) evictOldest() {
+	var oldestKey string
+	var oldestTime time.Time
+	first := true
+
+	for key, entry := range rl.limiters {
+		if first || entry.lastAccess.Before(oldestTime) {
+			oldestKey = key
+			oldestTime = entry.lastAccess
+			first = false
+		}
+	}
+
+	if oldestKey != "" {
+		delete(rl.limiters, oldestKey)
+	}
 }
 
 func (rl *RateLimiter) cleanupLoop() {

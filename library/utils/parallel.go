@@ -5,8 +5,10 @@ import (
 	"sync"
 )
 
+const parallelMultiplier = 2
+
 //nolint:gochecknoglobals
-var numParallelInstance = runtime.NumCPU() * 5
+var numParallelInstance = max(1, runtime.NumCPU()*parallelMultiplier)
 
 // ApplyParallel is apply each funcs parallelly.
 func ApplyParallel(start, end int, fnc func(start, end int)) {

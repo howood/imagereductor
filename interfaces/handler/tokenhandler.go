@@ -18,7 +18,7 @@ type TokenHandler struct {
 // Request is get from storage.
 func (th TokenHandler) Request(c echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
-	ctx := context.WithValue(context.Background(), requestid.GetRequestIDKey(), xRequestID)
+	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
