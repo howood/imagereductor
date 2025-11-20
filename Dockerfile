@@ -24,9 +24,6 @@ RUN cd /go/src/github.com/howood/imagereductor/imagereductor && \
 
 FROM busybox:latest
 
-# Create non-root user
-RUN adduser -D -u 1000 appuser
-
 # Copy SSL certificates and binary
 COPY --from=build-env /etc/ssl/certs /etc/ssl/certs
 COPY --from=build-env /go/bin/imagereductor /usr/local/bin/imagereductor
