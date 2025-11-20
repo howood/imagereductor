@@ -31,18 +31,4 @@ RUN adduser -D -u 1000 appuser
 COPY --from=build-env /etc/ssl/certs /etc/ssl/certs
 COPY --from=build-env /go/bin/imagereductor /usr/local/bin/imagereductor
 
-# Change ownership and switch to non-root user
-RUN chown appuser:appuser /usr/local/bin/imagereductor
-USER appuser
-
-# Set default port to 8080 (non-privileged port)
-ENV SERVER_PORT=8080
-
-# Expose default port
-EXPOSE 8080
-
-# Health check - use root endpoint which doesn't require storage key
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --spider -q http://localhost:8080/ || exit 1
-
 ENTRYPOINT ["/usr/local/bin/imagereductor"]
