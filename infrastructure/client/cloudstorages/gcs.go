@@ -33,10 +33,16 @@ type GCSConfig struct {
 
 // LoadGCSConfigFromEnv builds config from environment variables.
 func LoadGCSConfigFromEnv() GCSConfig {
+	timeout := defaultTimeout * time.Second
+	if t := os.Getenv("GCS_TIMEOUT"); t != "" {
+		if parsed, err := time.ParseDuration(t); err == nil {
+			timeout = parsed
+		}
+	}
 	return GCSConfig{
 		ProjectID: os.Getenv("GCS_PROJECTID"),
 		Bucket:    os.Getenv("GCS_BUKET"),
-		Timeout:   0,
+		Timeout:   timeout,
 	}
 }
 
