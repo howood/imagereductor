@@ -26,6 +26,14 @@ const (
 	ImageTypeTiff = "tiff"
 )
 
+// Sentinel errors for image validation.
+var (
+	ErrInvalidImageType   = errors.New("invalid image type")
+	ErrImageSizeExceeded  = errors.New("image size exceeded")
+	ErrImageDecodeConfig  = errors.New("failed to decode image config")
+	ErrImageReadRemaining = errors.New("failed to read remaining image data")
+)
+
 // imageTypeList is list of image types.
 //
 //nolint:gochecknoglobals
@@ -64,12 +72,11 @@ func (val *ImageValidator) Validate(ctx context.Context, uploadfile io.Reader) e
 	log.Debug(ctx, fmt.Sprintf("%#v", imageinfo))
 	log.Debug(ctx, format)
 	if err != nil {
-		return fmt.Errorf("decode image config: %w", err)
+		return fmt.Errorf("%w: %w", ErrImageDecodeConfig, err)
 	}
 
-	//nolint:err113
 	if !utils.StringArrayContains(val.imagetype, format) {
-		return fmt.Errorf("invalid Image type: %s", strings.Join(val.imagetype, "/"))
+		return fmt.Errorf("%w: got %s, allowed: %s", ErrInvalidImageType, format, strings.Join(val.imagetype, ","))
 	}
 
 	sizeerrormsg := make([]string, 0)
@@ -82,7 +89,7 @@ func (val *ImageValidator) Validate(ctx context.Context, uploadfile io.Reader) e
 
 	// Read remaining data if DecodeConfig didn't consume all
 	if _, err := io.Copy(buf, teeReader); err != nil {
-		return fmt.Errorf("read remaining data: %w", err)
+		return fmt.Errorf("%w: %w", ErrImageReadRemaining, err)
 	}
 
 	filesize := buf.Len()
@@ -94,8 +101,7 @@ func (val *ImageValidator) Validate(ctx context.Context, uploadfile io.Reader) e
 		sizeerrormsg = append(sizeerrormsg, fmt.Sprintf("Over Image filesize: %v MB", utils.RoundFloat(float64(val.maxfilesize)/1024/1024, 2)))
 	}
 	if len(sizeerrormsg) > 0 {
-		//nolint:err113
-		return errors.New(strings.Join(sizeerrormsg, "/"))
+		return fmt.Errorf("%w: %s", ErrImageSizeExceeded, strings.Join(sizeerrormsg, "; "))
 	}
 	return nil
 }
