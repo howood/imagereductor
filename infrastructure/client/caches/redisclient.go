@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"math/big"
@@ -142,7 +143,30 @@ func checkPing(ctx context.Context, connectionkey int) error {
 
 func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error {
 	var tlsConfig *tls.Config
-	if os.Getenv("REDISTLS") == "skipverify" {
+	redistls := os.Getenv("REDISTLS")
+	if redistls == "enable" {
+		// Production mode: verify server certificate
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		// Optional: custom CA certificate
+		if caCertPath := os.Getenv("REDISTLS_CA_CERT"); caCertPath != "" {
+			caCert, err := os.ReadFile(caCertPath)
+			if err != nil {
+				log.Warn(ctx, "Failed to read CA certificate: "+err.Error())
+			} else {
+				caCertPool := x509.NewCertPool()
+				if caCertPool.AppendCertsFromPEM(caCert) {
+					tlsConfig.RootCAs = caCertPool
+				}
+			}
+		}
+		// Optional: SNI server name (required for ElastiCache)
+		if serverName := os.Getenv("REDISTLS_SERVER_NAME"); serverName != "" {
+			tlsConfig.ServerName = serverName
+		}
+	} else if redistls == "skipverify" {
+		// Development mode: skip certificate verification
 		tlsConfig = &tls.Config{
 			//nolint:gosec
 			InsecureSkipVerify: true,
