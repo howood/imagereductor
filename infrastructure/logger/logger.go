@@ -19,14 +19,45 @@ const (
 	logModeMedium = "minimum"
 )
 
+// Supported log levels for LOG_LEVEL environment variable.
+const (
+	LogLevelDebug = "debug"
+	LogLevelInfo  = "info"
+	LogLevelWarn  = "warn"
+	LogLevelError = "error"
+	LogLevelFatal = "fatal"
+)
+
 //nolint:gochecknoglobals
 var log *zap.Logger
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits,cyclop
 func init() {
-	level := zap.DebugLevel
-	if os.Getenv("VERIFY_MODE") != "enable" {
-		switch os.Getenv("LOG_MODE") {
+	level := zap.InfoLevel // default to Info level
+
+	// Priority 1: LOG_LEVEL environment variable (recommended)
+	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+		switch logLevel {
+		case LogLevelDebug:
+			level = zap.DebugLevel
+		case LogLevelInfo:
+			level = zap.InfoLevel
+		case LogLevelWarn:
+			level = zap.WarnLevel
+		case LogLevelError:
+			level = zap.ErrorLevel
+		case LogLevelFatal:
+			level = zap.FatalLevel
+		default:
+			// Invalid LOG_LEVEL, use default Info
+			fmt.Fprintf(os.Stderr, "Invalid LOG_LEVEL '%s', using 'info'. Valid values: debug, info, warn, error, fatal\n", logLevel)
+		}
+	} else if os.Getenv("VERIFY_MODE") == "enable" {
+		// Priority 2: VERIFY_MODE=enable forces Debug level
+		level = zap.DebugLevel
+	} else if logMode := os.Getenv("LOG_MODE"); logMode != "" {
+		// Priority 3: Legacy LOG_MODE (deprecated, kept for backward compatibility)
+		switch logMode {
 		case logModeFew:
 			level = zap.WarnLevel
 		case logModeMedium:

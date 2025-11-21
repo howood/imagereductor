@@ -49,6 +49,7 @@ Image delivery from storage of AWS S3 / GCS contents with Resizing and Caching
 | --------------- |---------------|
 | VERIFY_MODE |enable / disable |
 | LOG_MODE |minimum / few or empty |
+| LOG_LEVEL | debug / info / warn / error / fatal |
 | ADMIN_MODE |enable / disable |
 | SERVER_PORT |8080, 80, etc |
 | TOKENAPI_ALLOW_IPS |72.22.0.1/24,127.0.0.1/32(separate with comma) |
