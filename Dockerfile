@@ -24,8 +24,25 @@ RUN cd /go/src/github.com/howood/imagereductor/imagereductor && \
 
 FROM busybox:latest
 
+# Create non-root user
+RUN adduser -D -u 1000 appuser
+
 # Copy SSL certificates and binary
 COPY --from=build-env /etc/ssl/certs /etc/ssl/certs
 COPY --from=build-env /go/bin/imagereductor /usr/local/bin/imagereductor
+
+# Set ownership
+RUN chown appuser:appuser /usr/local/bin/imagereductor
+
+# Default to non-root user (can be overridden with --user root)
+USER appuser
+
+# Default port (can be overridden with -e SERVER_PORT=80)
+ENV SERVER_PORT=8080
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --spider -q http://localhost:${SERVER_PORT}/ || exit 1
 
 ENTRYPOINT ["/usr/local/bin/imagereductor"]
