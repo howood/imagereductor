@@ -24,5 +24,5 @@ func (th TokenHandler) Request(c echo.Context) error {
 	log.Info(ctx, c.Request().Header)
 	claimname := uuid.GetUUID(uuid.SatoriUUID)
 	tokenstr := th.UcCluster.TokenUC.CreateToken(ctx, claimname)
-	return c.JSONPretty(http.StatusOK, map[string]interface{}{"token": tokenstr}, "    ")
+	return c.JSONPretty(http.StatusOK, map[string]any{"token": tokenstr}, "    ")
 }

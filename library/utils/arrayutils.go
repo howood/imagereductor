@@ -1,15 +1,13 @@
 package utils
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // StringArrayContains checks contains string in string array.
 func StringArrayContains(arr []string, str string) bool {
-	for _, v := range arr {
-		if v == str {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(arr, str)
 }
 
 // StringArrayContainsForwardMatch checks contains string in string array with forward match.
@@ -24,11 +22,5 @@ func StringArrayContainsForwardMatch(arr []string, str string) bool {
 
 // IntArrayContains checks contains int in int array.
 func IntArrayContains(arr []int, num int) bool {
-	for _, v := range arr {
-		if v == num {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(arr, num)
 }

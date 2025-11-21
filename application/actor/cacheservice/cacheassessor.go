@@ -2,6 +2,8 @@ package cacheservice
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -10,32 +12,53 @@ import (
 	"github.com/howood/imagereductor/library/utils"
 )
 
+// Sentinel errors for cache validation.
+var (
+	ErrInvalidCacheType = errors.New("invalid cache type")
+	ErrCacheTypeEmpty   = errors.New("CACHE_TYPE environment variable is not set")
+)
+
 // CacheAssessor struct.
 type CacheAssessor struct {
 	instance caches.CacheInstance
 }
 
 // NewCacheAssessor creates a new CacheAssessor.
+//
+// Deprecated: Use NewCacheAssessorWithConfig for better error handling.
 func NewCacheAssessor(db int) *CacheAssessor {
-	var I *CacheAssessor
-	log.Debug(context.Background(), "use:"+os.Getenv("CACHE_TYPE"))
-	switch os.Getenv("CACHE_TYPE") {
-	case "redis":
-		I = &CacheAssessor{
-			instance: caches.NewRedis(true, db),
-		}
-	case "gocache":
-		I = &CacheAssessor{
-			instance: caches.NewGoCacheClient(),
-		}
-	default:
-		panic("Invalid CACHE_TYPE")
+	assessor, err := NewCacheAssessorWithConfig(context.Background(), db)
+	if err != nil {
+		panic(err)
 	}
-	return I
+	return assessor
+}
+
+// NewCacheAssessorWithConfig creates a new CacheAssessor with proper error handling.
+func NewCacheAssessorWithConfig(ctx context.Context, db int) (*CacheAssessor, error) {
+	cacheType := os.Getenv("CACHE_TYPE")
+	if cacheType == "" {
+		return nil, ErrCacheTypeEmpty
+	}
+	log.Debug(ctx, "use:"+cacheType)
+
+	switch cacheType {
+	case "redis":
+		return &CacheAssessor{
+			//nolint:contextcheck
+			instance: caches.NewRedis(true, db),
+		}, nil
+	case "gocache":
+		return &CacheAssessor{
+			instance: caches.NewGoCacheClient(),
+		}, nil
+	default:
+		return nil, fmt.Errorf("%w: %s", ErrInvalidCacheType, cacheType)
+	}
 }
 
 // Get returns cache contents.
-func (ca *CacheAssessor) Get(ctx context.Context, index string) (interface{}, bool, error) {
+func (ca *CacheAssessor) Get(ctx context.Context, index string) (any, bool, error) {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return
@@ -53,7 +76,7 @@ func (ca *CacheAssessor) Get(ctx context.Context, index string) (interface{}, bo
 }
 
 // Set puts cache contents.
-func (ca *CacheAssessor) Set(ctx context.Context, index string, value interface{}, expired int) error {
+func (ca *CacheAssessor) Set(ctx context.Context, index string, value any, expired int) error {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return

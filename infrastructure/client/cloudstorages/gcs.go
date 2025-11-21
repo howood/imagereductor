@@ -24,7 +24,6 @@ var (
 
 // （後方互換目的で保持していたGCS用のグローバル環境変数参照は廃止し、明示的なconfig取得に統一）
 
-// GCSInstance struct.
 // GCSConfig defines configuration for GCSInstance (similar to S3Config for S3).
 type GCSConfig struct {
 	ProjectID string
@@ -34,10 +33,16 @@ type GCSConfig struct {
 
 // LoadGCSConfigFromEnv builds config from environment variables.
 func LoadGCSConfigFromEnv() GCSConfig {
+	timeout := defaultTimeout * time.Second
+	if t := os.Getenv("GCS_TIMEOUT"); t != "" {
+		if parsed, err := time.ParseDuration(t); err == nil {
+			timeout = parsed
+		}
+	}
 	return GCSConfig{
 		ProjectID: os.Getenv("GCS_PROJECTID"),
 		Bucket:    os.Getenv("GCS_BUKET"),
-		Timeout:   0,
+		Timeout:   timeout,
 	}
 }
 
@@ -46,7 +51,6 @@ type GCSInstance struct {
 	cfg    GCSConfig
 }
 
-// NewGCS creates a new GCSInstance.
 // NewGCSWithConfig is new constructor returning error.
 func NewGCSWithConfig(ctx context.Context, cfg GCSConfig) (*GCSInstance, error) {
 	if cfg.Bucket == "" {

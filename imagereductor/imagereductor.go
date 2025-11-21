@@ -26,7 +26,10 @@ const (
 func main() {
 	defaultPort := utils.GetOsEnv("SERVER_PORT", "8080")
 
-	usecaseCluster := uccluster.NewUsecaseCluster()
+	usecaseCluster, err := uccluster.NewUsecaseCluster()
+	if err != nil {
+		panic(err)
+	}
 	baseHandler := handler.BaseHandler{UcCluster: usecaseCluster}
 	ipLimiter := custommiddleware.NewRateLimiter(custommiddleware.RateLimitConfig{
 		Rate:     rate.Every(time.Second),

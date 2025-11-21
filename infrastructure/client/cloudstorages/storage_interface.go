@@ -7,7 +7,10 @@ import (
 	"github.com/howood/imagereductor/domain/entity"
 )
 
-const mimeOctetStream = "application/octet-stream"
+const (
+	mimeOctetStream = "application/octet-stream"
+	defaultTimeout  = 30 // seconds
+)
 
 // StorageInstance interface.
 type StorageInstance interface {

@@ -39,7 +39,7 @@ func NewGoCacheClient() *GoCacheClient {
 }
 
 // Get gets from cache.
-func (cc *GoCacheClient) Get(ctx context.Context, key string) (interface{}, bool, error) {
+func (cc *GoCacheClient) Get(ctx context.Context, key string) (any, bool, error) {
 	val, ok := cc.getInstance(ctx, key).Get(key)
 	if !ok {
 		return nil, false, nil
@@ -48,7 +48,7 @@ func (cc *GoCacheClient) Get(ctx context.Context, key string) (interface{}, bool
 }
 
 // Set puts to cache.
-func (cc *GoCacheClient) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+func (cc *GoCacheClient) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	cc.getInstance(ctx, key).Set(key, value, ttl)
 	return nil
 }
@@ -73,7 +73,7 @@ func (cc *GoCacheClient) CloseConnect() error {
 //nolint:mnd
 func (cc *GoCacheClient) getInstance(ctx context.Context, key string) *cache.Cache {
 	// djb2 algorithm
-	_, hash := 0, uint32(5381)
+	hash := uint32(5381)
 	for _, c := range key {
 		hash = ((hash << 5) + hash) + uint32(c)
 	}

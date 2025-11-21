@@ -14,10 +14,26 @@ type CacheUsecase struct {
 	cacheAssessor *cacheservice.CacheAssessor
 }
 
+// NewCacheUsecase creates a new CacheUsecase.
+//
+// Deprecated: Use NewCacheUsecaseWithConfig for better error handling.
 func NewCacheUsecase() *CacheUsecase {
-	return &CacheUsecase{
-		cacheAssessor: cacheservice.NewCacheAssessor(cacheservice.GetCachedDB()),
+	uc, err := NewCacheUsecaseWithConfig(context.Background())
+	if err != nil {
+		panic(err)
 	}
+	return uc
+}
+
+// NewCacheUsecaseWithConfig creates a new CacheUsecase with proper error handling.
+func NewCacheUsecaseWithConfig(ctx context.Context) (*CacheUsecase, error) {
+	cacheAssessor, err := cacheservice.NewCacheAssessorWithConfig(ctx, cacheservice.GetCachedDB())
+	if err != nil {
+		return nil, err
+	}
+	return &CacheUsecase{
+		cacheAssessor: cacheAssessor,
+	}, nil
 }
 
 //nolint:ireturn

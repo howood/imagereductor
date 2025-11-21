@@ -40,6 +40,12 @@ type S3Config struct {
 
 // LoadS3ConfigFromEnv builds config from environment variables (backward compatibility helper).
 func LoadS3ConfigFromEnv() S3Config {
+	timeout := defaultTimeout * time.Second
+	if t := os.Getenv("AWS_S3_TIMEOUT"); t != "" {
+		if parsed, err := time.ParseDuration(t); err == nil {
+			timeout = parsed
+		}
+	}
 	return S3Config{
 		Region:    os.Getenv("AWS_S3_REGION"),
 		Endpoint:  os.Getenv("AWS_S3_ENDPOINT"),
@@ -47,7 +53,7 @@ func LoadS3ConfigFromEnv() S3Config {
 		AccessKey: os.Getenv("AWS_S3_ACCESSKEY"),
 		SecretKey: os.Getenv("AWS_S3_SECRETKEY"),
 		Bucket:    os.Getenv("AWS_S3_BUKET"),
-		Timeout:   0,
+		Timeout:   timeout,
 	}
 }
 

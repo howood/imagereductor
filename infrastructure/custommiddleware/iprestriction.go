@@ -25,8 +25,7 @@ func init() {
 	}
 
 	ipRestrictionEnabled = true
-	allowIPs := strings.Split(allowIPsEnv, ",")
-	for _, ip := range allowIPs {
+	for ip := range strings.SplitSeq(allowIPsEnv, ",") {
 		_, ipnet, err := net.ParseCIDR(strings.TrimSpace(ip))
 		if err != nil {
 			// Log error and continue with other IPs

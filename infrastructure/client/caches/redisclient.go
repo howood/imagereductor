@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"math/big"
@@ -73,7 +74,7 @@ func NewRedis(connectionpersistent bool, redisdb int) *RedisInstance {
 }
 
 // Set puts to cache.
-func (i *RedisInstance) Set(ctx context.Context, key string, value interface{}, expired time.Duration) error {
+func (i *RedisInstance) Set(ctx context.Context, key string, value any, expired time.Duration) error {
 	log.Debug(ctx, "-----SET----")
 	log.Debug(ctx, key)
 	log.Debug(ctx, expired)
@@ -81,7 +82,7 @@ func (i *RedisInstance) Set(ctx context.Context, key string, value interface{}, 
 }
 
 // Get gets from cache.
-func (i *RedisInstance) Get(ctx context.Context, key string) (interface{}, bool, error) {
+func (i *RedisInstance) Get(ctx context.Context, key string) (any, bool, error) {
 	cachedvalue, err := i.client.Get(ctx, key).Result()
 	log.Debug(ctx, "-----GET----")
 	log.Debug(ctx, key)
@@ -142,7 +143,31 @@ func checkPing(ctx context.Context, connectionkey int) error {
 
 func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error {
 	var tlsConfig *tls.Config
-	if os.Getenv("REDISTLS") == "skipverify" {
+	redistls := os.Getenv("REDISTLS")
+	switch redistls {
+	case "enable":
+		// Production mode: verify server certificate
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		// Optional: custom CA certificate
+		if caCertPath := os.Getenv("REDISTLS_CA_CERT"); caCertPath != "" {
+			caCert, err := os.ReadFile(caCertPath)
+			if err != nil {
+				log.Warn(ctx, "Failed to read CA certificate: "+err.Error())
+			} else {
+				caCertPool := x509.NewCertPool()
+				if caCertPool.AppendCertsFromPEM(caCert) {
+					tlsConfig.RootCAs = caCertPool
+				}
+			}
+		}
+		// Optional: SNI server name (required for ElastiCache)
+		if serverName := os.Getenv("REDISTLS_SERVER_NAME"); serverName != "" {
+			tlsConfig.ServerName = serverName
+		}
+	case "skipverify":
+		// Development mode: skip certificate verification
 		tlsConfig = &tls.Config{
 			//nolint:gosec
 			InsecureSkipVerify: true,

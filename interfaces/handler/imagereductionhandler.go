@@ -168,7 +168,6 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
-	var err error
 	// get imageoption
 	imageoption, err := irh.getImageOptionByFormValue(ctx, c)
 	if err != nil {
@@ -176,22 +175,17 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
 	// read uploaded image
-	var file *multipart.FileHeader
-	var reader multipart.File
-	if err == nil {
-		file, err = c.FormFile(config.FormKeyUploadFile)
+	file, err := c.FormFile(config.FormKeyUploadFile)
+	if err != nil {
+		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
-	if err == nil {
-		reader, err = file.Open()
-	}
+	reader, err := file.Open()
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
 	defer reader.Close()
 	// validate
-	if err == nil {
-		err = irh.validateUploadedImage(ctx, reader)
-	}
+	err = irh.validateUploadedImage(ctx, reader)
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}

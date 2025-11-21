@@ -1,21 +1,32 @@
 package uccluster
 
 import (
+	"context"
+
 	"github.com/howood/imagereductor/application/usecase"
 )
 
-// DataStore interface.
+// UsecaseCluster interface.
 type UsecaseCluster struct {
 	CacheUC *usecase.CacheUsecase
 	ImageUC *usecase.ImageUsecase
 	TokenUC *usecase.TokenUsecase
 }
 
-// NewDatastore returns DataStore interface.
-func NewUsecaseCluster() *UsecaseCluster {
-	return &UsecaseCluster{
-		CacheUC: usecase.NewCacheUsecase(),
-		ImageUC: usecase.NewImageUsecase(),
-		TokenUC: usecase.NewTokenUsecase(),
+// NewUsecaseCluster returns UsecaseCluster interface.
+func NewUsecaseCluster() (*UsecaseCluster, error) {
+	ctx := context.Background()
+	cacheUC, err := usecase.NewCacheUsecaseWithConfig(ctx)
+	if err != nil {
+		return nil, err
 	}
+	imageUC, err := usecase.NewImageUsecaseWithConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &UsecaseCluster{
+		CacheUC: cacheUC,
+		ImageUC: imageUC,
+		TokenUC: usecase.NewTokenUsecase(),
+	}, nil
 }
