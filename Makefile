@@ -32,8 +32,8 @@ coverage-view:
 	open coverage.html || xdg-open coverage.html || start coverage.html
 
 lint:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
-	golangci-lint run ./...
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.6.2 &&  \
+	./bin/golangci-lint run ./...
 
 fmt:
 	go install golang.org/x/tools/cmd/goimports@v0.37.0
