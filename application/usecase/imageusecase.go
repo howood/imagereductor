@@ -17,10 +17,25 @@ type ImageUsecase struct {
 	cloudstorage *storageservice.CloudStorageAssessor
 }
 
+// NewImageUsecase creates a new ImageUsecase.
+// Deprecated: Use NewImageUsecaseWithConfig for better error handling.
 func NewImageUsecase() *ImageUsecase {
-	return &ImageUsecase{
-		cloudstorage: storageservice.NewCloudStorageAssessor(),
+	uc, err := NewImageUsecaseWithConfig(context.Background())
+	if err != nil {
+		panic(err)
 	}
+	return uc
+}
+
+// NewImageUsecaseWithConfig creates a new ImageUsecase with proper error handling.
+func NewImageUsecaseWithConfig(ctx context.Context) (*ImageUsecase, error) {
+	cloudstorage, err := storageservice.NewCloudStorageAssessorWithConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &ImageUsecase{
+		cloudstorage: cloudstorage,
+	}, nil
 }
 
 func (iu *ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOperatorOption, storageKeyValue string) (string, []byte, error) {

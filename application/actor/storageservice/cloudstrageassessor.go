@@ -2,6 +2,8 @@ package storageservice
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 
@@ -13,25 +15,54 @@ import (
 // RecordNotFoundMsg define status 404 message.
 const RecordNotFoundMsg = "status code: 404"
 
+// Sentinel errors for storage validation.
+var (
+	ErrInvalidStorageType = errors.New("invalid storage type")
+	ErrStorageTypeEmpty   = errors.New("STORAGE_TYPE environment variable is not set")
+)
+
 // CloudStorageAssessor struct.
 type CloudStorageAssessor struct {
 	instance cloudstorages.StorageInstance
 }
 
 // NewCloudStorageAssessor creates a new CloudStorageAssessor.
+// Deprecated: Use NewCloudStorageAssessorWithConfig for better error handling.
 func NewCloudStorageAssessor() *CloudStorageAssessor {
 	ctx := context.Background()
-	var I *CloudStorageAssessor
-	log.Debug(ctx, "use:"+os.Getenv("STORAGE_TYPE"))
-	switch os.Getenv("STORAGE_TYPE") {
-	case "s3":
-		I = &CloudStorageAssessor{instance: cloudstorages.NewS3()}
-	case "gcs":
-		I = &CloudStorageAssessor{instance: cloudstorages.NewGCS()}
-	default:
-		panic("Invalid STORAGE_TYPE")
+	assessor, err := NewCloudStorageAssessorWithConfig(ctx)
+	if err != nil {
+		panic(err)
 	}
-	return I
+	return assessor
+}
+
+// NewCloudStorageAssessorWithConfig creates a new CloudStorageAssessor with proper error handling.
+func NewCloudStorageAssessorWithConfig(ctx context.Context) (*CloudStorageAssessor, error) {
+	storageType := os.Getenv("STORAGE_TYPE")
+	if storageType == "" {
+		return nil, ErrStorageTypeEmpty
+	}
+	log.Debug(ctx, "use:"+storageType)
+
+	switch storageType {
+	case "s3":
+		s3cfg := cloudstorages.LoadS3ConfigFromEnv()
+		inst, err := cloudstorages.NewS3WithConfig(ctx, s3cfg)
+		if err != nil {
+			return nil, fmt.Errorf("create s3 instance: %w", err)
+		}
+		return &CloudStorageAssessor{instance: inst}, nil
+	case "gcs":
+		gcscfg := cloudstorages.LoadGCSConfigFromEnv()
+		inst, err := cloudstorages.NewGCSWithConfig(ctx, gcscfg)
+		if err != nil {
+			return nil, fmt.Errorf("create gcs instance: %w", err)
+		}
+		return &CloudStorageAssessor{instance: inst}, nil
+	default:
+		return nil, fmt.Errorf("%w: %s", ErrInvalidStorageType, storageType)
+	}
 }
 
 // Get returns storage contents.
