@@ -73,7 +73,7 @@ func (cc *GoCacheClient) CloseConnect() error {
 //nolint:mnd
 func (cc *GoCacheClient) getInstance(ctx context.Context, key string) *cache.Cache {
 	// djb2 algorithm
-	_, hash := 0, uint32(5381)
+	hash := uint32(5381)
 	for _, c := range key {
 		hash = ((hash << 5) + hash) + uint32(c)
 	}
