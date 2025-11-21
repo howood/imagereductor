@@ -15,6 +15,7 @@ type CacheUsecase struct {
 }
 
 // NewCacheUsecase creates a new CacheUsecase.
+//
 // Deprecated: Use NewCacheUsecaseWithConfig for better error handling.
 func NewCacheUsecase() *CacheUsecase {
 	uc, err := NewCacheUsecaseWithConfig(context.Background())

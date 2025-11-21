@@ -31,7 +31,7 @@ func (bh BaseHandler) errorResponse(ctx context.Context, c echo.Context, statudc
 		statudcode = http.StatusNotFound
 	}
 	c.Response().Header().Set(echo.HeaderXRequestID, fmt.Sprintf("%v", ctx.Value(requestid.GetRequestIDKey())))
-	return c.JSONPretty(statudcode, map[string]interface{}{"message": err.Error()}, marshalIndent)
+	return c.JSONPretty(statudcode, map[string]any{"message": err.Error()}, marshalIndent)
 }
 
 func (bh BaseHandler) setResponseHeader(c echo.Context, lastmodified, contentlength string, expires, xrequestid string) {
@@ -57,6 +57,6 @@ func (bh BaseHandler) getHeaderExpires() int {
 	return utils.GetOsEnvInt("HEADEREXPIRED", 300)
 }
 
-func (bh BaseHandler) jsonToByte(jsondata interface{}) ([]byte, error) {
+func (bh BaseHandler) jsonToByte(jsondata any) ([]byte, error) {
 	return json.MarshalIndent(jsondata, marshalPrefix, marshalIndent)
 }

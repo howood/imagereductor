@@ -62,49 +62,49 @@ func init() {
 }
 
 // Debug log output with Debug.
-func Debug(ctx context.Context, msg ...interface{}) {
+func Debug(ctx context.Context, msg ...any) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Debug(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Info log output with Info.
-func Info(ctx context.Context, msg ...interface{}) {
+func Info(ctx context.Context, msg ...any) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Info(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Warn log output with Warn.
-func Warn(ctx context.Context, msg ...interface{}) {
+func Warn(ctx context.Context, msg ...any) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Warn(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Error log output with Error.
-func Error(ctx context.Context, msg ...interface{}) {
+func Error(ctx context.Context, msg ...any) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Error(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Panic log output with Panic.
-func Panic(ctx context.Context, msg ...interface{}) {
+func Panic(ctx context.Context, msg ...any) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Panic(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
 // Fatal log output with Fatal.
-func Fatal(ctx context.Context, msg ...interface{}) {
+func Fatal(ctx context.Context, msg ...any) {
 	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Fatal(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
 
-func metadataFields(ctx context.Context, file string, msgs []interface{}) []zap.Field {
-	messages := make([]interface{}, 0)
+func metadataFields(ctx context.Context, file string, msgs []any) []zap.Field {
+	messages := make([]any, 0)
 	if len(msgs) > 1 {
 		messages = msgs[1:]
 	}

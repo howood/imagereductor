@@ -74,7 +74,7 @@ func NewRedis(connectionpersistent bool, redisdb int) *RedisInstance {
 }
 
 // Set puts to cache.
-func (i *RedisInstance) Set(ctx context.Context, key string, value interface{}, expired time.Duration) error {
+func (i *RedisInstance) Set(ctx context.Context, key string, value any, expired time.Duration) error {
 	log.Debug(ctx, "-----SET----")
 	log.Debug(ctx, key)
 	log.Debug(ctx, expired)
@@ -82,7 +82,7 @@ func (i *RedisInstance) Set(ctx context.Context, key string, value interface{}, 
 }
 
 // Get gets from cache.
-func (i *RedisInstance) Get(ctx context.Context, key string) (interface{}, bool, error) {
+func (i *RedisInstance) Get(ctx context.Context, key string) (any, bool, error) {
 	cachedvalue, err := i.client.Get(ctx, key).Result()
 	log.Debug(ctx, "-----GET----")
 	log.Debug(ctx, key)
@@ -144,7 +144,8 @@ func checkPing(ctx context.Context, connectionkey int) error {
 func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error {
 	var tlsConfig *tls.Config
 	redistls := os.Getenv("REDISTLS")
-	if redistls == "enable" {
+	switch redistls {
+	case "enable":
 		// Production mode: verify server certificate
 		tlsConfig = &tls.Config{
 			MinVersion: tls.VersionTLS12,
@@ -165,7 +166,7 @@ func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error
 		if serverName := os.Getenv("REDISTLS_SERVER_NAME"); serverName != "" {
 			tlsConfig.ServerName = serverName
 		}
-	} else if redistls == "skipverify" {
+	case "skipverify":
 		// Development mode: skip certificate verification
 		tlsConfig = &tls.Config{
 			//nolint:gosec

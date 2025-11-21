@@ -18,6 +18,7 @@ type ImageUsecase struct {
 }
 
 // NewImageUsecase creates a new ImageUsecase.
+//
 // Deprecated: Use NewImageUsecaseWithConfig for better error handling.
 func NewImageUsecase() *ImageUsecase {
 	uc, err := NewImageUsecaseWithConfig(context.Background())

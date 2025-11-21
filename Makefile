@@ -19,7 +19,7 @@ testv:
 	go test ./... -v
 
 lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.4.0 &&  \
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.6.2 &&  \
 	./bin/golangci-lint run ./...
 
 fmt:

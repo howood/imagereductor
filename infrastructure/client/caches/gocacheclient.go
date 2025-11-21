@@ -39,7 +39,7 @@ func NewGoCacheClient() *GoCacheClient {
 }
 
 // Get gets from cache.
-func (cc *GoCacheClient) Get(ctx context.Context, key string) (interface{}, bool, error) {
+func (cc *GoCacheClient) Get(ctx context.Context, key string) (any, bool, error) {
 	val, ok := cc.getInstance(ctx, key).Get(key)
 	if !ok {
 		return nil, false, nil
@@ -48,7 +48,7 @@ func (cc *GoCacheClient) Get(ctx context.Context, key string) (interface{}, bool
 }
 
 // Set puts to cache.
-func (cc *GoCacheClient) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+func (cc *GoCacheClient) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	cc.getInstance(ctx, key).Set(key, value, ttl)
 	return nil
 }

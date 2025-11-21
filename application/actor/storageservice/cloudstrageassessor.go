@@ -27,6 +27,7 @@ type CloudStorageAssessor struct {
 }
 
 // NewCloudStorageAssessor creates a new CloudStorageAssessor.
+//
 // Deprecated: Use NewCloudStorageAssessorWithConfig for better error handling.
 func NewCloudStorageAssessor() *CloudStorageAssessor {
 	ctx := context.Background()

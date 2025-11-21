@@ -24,6 +24,7 @@ type CacheAssessor struct {
 }
 
 // NewCacheAssessor creates a new CacheAssessor.
+//
 // Deprecated: Use NewCacheAssessorWithConfig for better error handling.
 func NewCacheAssessor(db int) *CacheAssessor {
 	assessor, err := NewCacheAssessorWithConfig(context.Background(), db)
@@ -44,6 +45,7 @@ func NewCacheAssessorWithConfig(ctx context.Context, db int) (*CacheAssessor, er
 	switch cacheType {
 	case "redis":
 		return &CacheAssessor{
+			//nolint:contextcheck
 			instance: caches.NewRedis(true, db),
 		}, nil
 	case "gocache":
@@ -56,7 +58,7 @@ func NewCacheAssessorWithConfig(ctx context.Context, db int) (*CacheAssessor, er
 }
 
 // Get returns cache contents.
-func (ca *CacheAssessor) Get(ctx context.Context, index string) (interface{}, bool, error) {
+func (ca *CacheAssessor) Get(ctx context.Context, index string) (any, bool, error) {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return
@@ -74,7 +76,7 @@ func (ca *CacheAssessor) Get(ctx context.Context, index string) (interface{}, bo
 }
 
 // Set puts cache contents.
-func (ca *CacheAssessor) Set(ctx context.Context, index string, value interface{}, expired int) error {
+func (ca *CacheAssessor) Set(ctx context.Context, index string, value any, expired int) error {
 	defer func() {
 		if r := ca.instance.CloseConnect(); r != nil {
 			return

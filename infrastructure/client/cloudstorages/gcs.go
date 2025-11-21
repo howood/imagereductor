@@ -24,7 +24,6 @@ var (
 
 // （後方互換目的で保持していたGCS用のグローバル環境変数参照は廃止し、明示的なconfig取得に統一）
 
-// GCSInstance struct.
 // GCSConfig defines configuration for GCSInstance (similar to S3Config for S3).
 type GCSConfig struct {
 	ProjectID string
@@ -46,7 +45,6 @@ type GCSInstance struct {
 	cfg    GCSConfig
 }
 
-// NewGCS creates a new GCSInstance.
 // NewGCSWithConfig is new constructor returning error.
 func NewGCSWithConfig(ctx context.Context, cfg GCSConfig) (*GCSInstance, error) {
 	if cfg.Bucket == "" {
