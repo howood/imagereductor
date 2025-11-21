@@ -50,7 +50,6 @@ jobs:
 
     - name: Comment coverage on PR
       if: github.event_name == 'pull_request'
-      uses: orgoro/coverage@v3.1
+      uses: k1LoW/octocov-action@v1
       with:
-        coverageFile: coverage.out
-        token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
