@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/howood/imagereductor/infrastructure/requestid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 func Test_RequestIDHandler(t *testing.T) {

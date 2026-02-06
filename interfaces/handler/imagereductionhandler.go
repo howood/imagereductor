@@ -18,7 +18,7 @@ import (
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/interfaces/config"
 	"github.com/howood/imagereductor/library/utils"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // ImageReductionHandler struct.
@@ -26,8 +26,12 @@ type ImageReductionHandler struct {
 	BaseHandler
 }
 
+func NewImageReductionHandler(baseHandler BaseHandler) *ImageReductionHandler {
+	return &ImageReductionHandler{BaseHandler: baseHandler}
+}
+
 // Request is get from storage.
-func (irh ImageReductionHandler) Request(c echo.Context) error {
+func (irh *ImageReductionHandler) Request(c *echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
@@ -64,7 +68,7 @@ func (irh ImageReductionHandler) Request(c echo.Context) error {
 }
 
 // RequestFile is get non image file from storage.
-func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
+func (irh *ImageReductionHandler) RequestFile(c *echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
@@ -97,7 +101,7 @@ func (irh ImageReductionHandler) RequestFile(c echo.Context) error {
 }
 
 // RequestStreaming is get non image file from storage by streaming.
-func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
+func (irh *ImageReductionHandler) RequestStreaming(c *echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
@@ -125,7 +129,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, contenttype)
 	c.Response().WriteHeader(http.StatusOK)
 
-	_, err = io.Copy(c.Response().Writer, response)
+	_, err = io.Copy(c.Response(), response)
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
@@ -133,7 +137,7 @@ func (irh ImageReductionHandler) RequestStreaming(c echo.Context) error {
 }
 
 // RequestInfo is get info from storage.
-func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
+func (irh *ImageReductionHandler) RequestInfo(c *echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
@@ -162,7 +166,7 @@ func (irh ImageReductionHandler) RequestInfo(c echo.Context) error {
 }
 
 // Upload is to upload to storage.
-func (irh ImageReductionHandler) Upload(c echo.Context) error {
+func (irh *ImageReductionHandler) Upload(c *echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
@@ -198,7 +202,7 @@ func (irh ImageReductionHandler) Upload(c echo.Context) error {
 }
 
 // UploadFile is to upload non image file to storage.
-func (irh ImageReductionHandler) UploadFile(c echo.Context) error {
+func (irh *ImageReductionHandler) UploadFile(c *echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
@@ -218,7 +222,7 @@ func (irh ImageReductionHandler) UploadFile(c echo.Context) error {
 }
 
 //nolint:mnd
-func (irh ImageReductionHandler) validateUploadedImage(ctx context.Context, reader multipart.File) error {
+func (irh *ImageReductionHandler) validateUploadedImage(ctx context.Context, reader multipart.File) error {
 	imagetypearray := strings.Split(os.Getenv("VALIDATE_IMAGE_TYPE"), ",")
 	maxwidth := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXWIDTH", 5000)
 	maxheight := utils.GetOsEnvInt("VALIDATE_IMAGE_MAXHEIGHT", 5000)
@@ -227,7 +231,7 @@ func (irh ImageReductionHandler) validateUploadedImage(ctx context.Context, read
 	return imagevalidate.Validate(ctx, reader)
 }
 
-func (irh ImageReductionHandler) getCache(ctx context.Context, c echo.Context, requesturi string) bool {
+func (irh *ImageReductionHandler) getCache(ctx context.Context, c *echo.Context, requesturi string) bool {
 	exist, cachedcontent, err := irh.UcCluster.CacheUC.GetCache(ctx, requesturi)
 	if !exist {
 		return false
@@ -253,11 +257,11 @@ func (irh ImageReductionHandler) getCache(ctx context.Context, c echo.Context, r
 	return true
 }
 
-func (irh ImageReductionHandler) setCache(ctx context.Context, mimetype string, data []byte, requesturi string) {
+func (irh *ImageReductionHandler) setCache(ctx context.Context, mimetype string, data []byte, requesturi string) {
 	irh.UcCluster.CacheUC.SetCache(ctx, mimetype, data, requesturi, irh.setNewLatsModified())
 }
 
-func (irh ImageReductionHandler) getImageOptionByFormValue(ctx context.Context, c echo.Context) (actor.ImageOperatorOption, error) {
+func (irh *ImageReductionHandler) getImageOptionByFormValue(ctx context.Context, c *echo.Context) (actor.ImageOperatorOption, error) {
 	var err error
 	option := actor.ImageOperatorOption{}
 	option.Rotate = c.FormValue(config.FormKeyRotate)
@@ -271,7 +275,7 @@ func (irh ImageReductionHandler) getImageOptionByFormValue(ctx context.Context, 
 	return option, err
 }
 
-func (irh ImageReductionHandler) setOptionValueInt(ctx context.Context, formvalue string, err error) (int, error) {
+func (irh *ImageReductionHandler) setOptionValueInt(ctx context.Context, formvalue string, err error) (int, error) {
 	if err != nil {
 		return 0, err
 	}
@@ -287,7 +291,7 @@ func (irh ImageReductionHandler) setOptionValueInt(ctx context.Context, formvalu
 	return val, err
 }
 
-func (irh ImageReductionHandler) setOptionValueFloat(ctx context.Context, formvalue string, err error) (float64, error) {
+func (irh *ImageReductionHandler) setOptionValueFloat(ctx context.Context, formvalue string, err error) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
@@ -304,7 +308,7 @@ func (irh ImageReductionHandler) setOptionValueFloat(ctx context.Context, formva
 }
 
 //nolint:mnd
-func (irh ImageReductionHandler) getCropParam(ctx context.Context, cropparam string, err error) ([4]int, error) {
+func (irh *ImageReductionHandler) getCropParam(ctx context.Context, cropparam string, err error) ([4]int, error) {
 	if err != nil {
 		return [4]int{}, err
 	}

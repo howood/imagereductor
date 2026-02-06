@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"golang.org/x/time/rate"
 )
 
@@ -26,9 +26,9 @@ type limiterEntry struct {
 type RateLimitConfig struct {
 	Rate         rate.Limit
 	Burst        int
-	KeyFunc      func(c echo.Context) string
+	KeyFunc      func(c *echo.Context) string
 	ErrorMsg     string
-	Skipper      func(c echo.Context) bool
+	Skipper      func(c *echo.Context) bool
 	CleanupTTL   time.Duration // How long to keep unused limiters
 	CleanupEvery time.Duration // How often to run cleanup
 	MaxKeys      int           // Maximum number of keys to store (0 = unlimited)
@@ -42,7 +42,7 @@ type RateLimiter struct {
 
 func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 	if config.KeyFunc == nil {
-		config.KeyFunc = func(c echo.Context) string {
+		config.KeyFunc = func(c *echo.Context) string {
 			return c.RealIP()
 		}
 	}
@@ -50,7 +50,7 @@ func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 		config.ErrorMsg = "Rate limit exceeded"
 	}
 	if config.Skipper == nil {
-		config.Skipper = func(_ echo.Context) bool {
+		config.Skipper = func(_ *echo.Context) bool {
 			return false
 		}
 	}
@@ -76,7 +76,7 @@ func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 
 func (rl *RateLimiter) Middleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			if rl.config.Skipper(c) {
 				return next(c)
 			}
@@ -166,11 +166,11 @@ func (rl *RateLimiter) cleanup() {
 	rl.mutex.Unlock()
 }
 
-func IPKeyFunc(c echo.Context) string {
+func IPKeyFunc(c *echo.Context) string {
 	return c.RealIP()
 }
 
-func APIKeyFunc(c echo.Context) string {
+func APIKeyFunc(c *echo.Context) string {
 	apiKey := c.Request().Header.Get("Authorization")
 	if apiKey != "" {
 		return "api:" + apiKey

@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const packegeName = "imagereductor"
+const packageName = "imagereductor"
 
 const (
 	logModeFew    = "few"
@@ -140,7 +140,7 @@ func metadataFields(ctx context.Context, file string, msgs []any) []zap.Field {
 		messages = msgs[1:]
 	}
 	return []zap.Field{
-		zap.String("PackegeName", packegeName),
+		zap.String("PackageName", packageName),
 		zap.String("file", file),
 		zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())),
 		zap.Any("messages", messages),

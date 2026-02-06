@@ -12,7 +12,7 @@ import (
 	"github.com/howood/imagereductor/di/uccluster"
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/library/utils"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 const (
@@ -26,7 +26,7 @@ type BaseHandler struct {
 }
 
 //nolint:unparam
-func (bh BaseHandler) errorResponse(ctx context.Context, c echo.Context, statudcode int, err error) error {
+func (bh BaseHandler) errorResponse(ctx context.Context, c *echo.Context, statudcode int, err error) error {
 	if strings.Contains(strings.ToLower(err.Error()), storageservice.RecordNotFoundMsg) {
 		statudcode = http.StatusNotFound
 	}
@@ -34,7 +34,7 @@ func (bh BaseHandler) errorResponse(ctx context.Context, c echo.Context, statudc
 	return c.JSONPretty(statudcode, map[string]any{"message": err.Error()}, marshalIndent)
 }
 
-func (bh BaseHandler) setResponseHeader(c echo.Context, lastmodified, contentlength string, expires, xrequestid string) {
+func (bh BaseHandler) setResponseHeader(c *echo.Context, lastmodified, contentlength string, expires, xrequestid string) {
 	c.Response().Header().Set(echo.HeaderLastModified, lastmodified)
 	c.Response().Header().Set(echo.HeaderContentLength, contentlength)
 	c.Response().Header().Set(echo.HeaderXRequestID, xrequestid)

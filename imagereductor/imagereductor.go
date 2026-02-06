@@ -11,9 +11,9 @@ import (
 	"github.com/howood/imagereductor/infrastructure/custommiddleware"
 	"github.com/howood/imagereductor/interfaces/handler"
 	"github.com/howood/imagereductor/library/utils"
-	echojwt "github.com/labstack/echo-jwt/v4"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echojwt "github.com/labstack/echo-jwt/v5"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"golang.org/x/time/rate"
 )
 
@@ -36,7 +36,7 @@ func main() {
 		Burst:    ipAddressRateLimitBurst,
 		KeyFunc:  custommiddleware.IPKeyFunc,
 		ErrorMsg: "Too many requests from your IP",
-		Skipper: func(c echo.Context) bool {
+		Skipper: func(c *echo.Context) bool {
 			return c.RealIP() == "127.0.0.1"
 		},
 		CleanupTTL:   ipAddressRateLimitCleanupTTL,
@@ -44,27 +44,31 @@ func main() {
 	})
 
 	e := echo.New()
-	e.Use(middleware.Logger())
+	e.Use(custommiddleware.JSONRequestLogger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORS())
+	e.Use(middleware.CORS("*"))
 	e.Use(ipLimiter.Middleware())
 
 	if os.Getenv("ADMIN_MODE") == "enable" {
-		e.GET("/token", handler.TokenHandler{BaseHandler: baseHandler}.Request, custommiddleware.IPRestriction())
+		tokenHandler := handler.NewTokenHandler(baseHandler)
+		e.GET("/token", tokenHandler.Request, custommiddleware.IPRestriction())
 	}
 	jwtconfig := echojwt.Config{
 		Skipper: custommiddleware.OptionsMethodSkipper,
-		NewClaimsFunc: func(_ echo.Context) jwt.Claims {
+		NewClaimsFunc: func(_ *echo.Context) jwt.Claims {
 			return new(entity.JwtClaims)
 		},
 		SigningKey: []byte(actor.TokenSecret),
 	}
-	e.GET("/", handler.ImageReductionHandler{BaseHandler: baseHandler}.Request)
-	e.POST("/", handler.ImageReductionHandler{BaseHandler: baseHandler}.Upload, echojwt.WithConfig(jwtconfig))
-	e.GET("/files", handler.ImageReductionHandler{BaseHandler: baseHandler}.RequestFile)
-	e.POST("/files", handler.ImageReductionHandler{BaseHandler: baseHandler}.UploadFile, echojwt.WithConfig(jwtconfig))
-	e.GET("/streaming", handler.ImageReductionHandler{BaseHandler: baseHandler}.RequestStreaming)
-	e.GET("/info", handler.ImageReductionHandler{BaseHandler: baseHandler}.RequestInfo)
+	imageReductorHandler := handler.NewImageReductionHandler(baseHandler)
+	e.GET("/", imageReductorHandler.Request)
+	e.POST("/", imageReductorHandler.Upload, echojwt.WithConfig(jwtconfig))
+	e.GET("/files", imageReductorHandler.RequestFile)
+	e.POST("/files", imageReductorHandler.UploadFile, echojwt.WithConfig(jwtconfig))
+	e.GET("/streaming", imageReductorHandler.RequestStreaming)
+	e.GET("/info", imageReductorHandler.RequestInfo)
 
-	e.Logger.Fatal(e.Start(":" + defaultPort))
+	if err := e.Start(":" + defaultPort); err != nil {
+		e.Logger.Error("failed to start server", "error", err)
+	}
 }
