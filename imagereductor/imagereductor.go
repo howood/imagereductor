@@ -51,9 +51,7 @@ func main() {
 	e.Use(ipLimiter.Middleware())
 
 	if os.Getenv("ADMIN_MODE") == "enable" {
-		e.GET("/token", func(c *echo.Context) error {
-			return handler.TokenHandler{BaseHandler: baseHandler}.Request(c)
-		}, custommiddleware.IPRestriction())
+		e.GET("/token", (&handler.TokenHandler{BaseHandler: baseHandler}).Request, custommiddleware.IPRestriction())
 	}
 	jwtconfig := echojwt.Config{
 		Skipper: custommiddleware.OptionsMethodSkipper,
