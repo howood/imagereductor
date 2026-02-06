@@ -51,7 +51,8 @@ func main() {
 	e.Use(ipLimiter.Middleware())
 
 	if os.Getenv("ADMIN_MODE") == "enable" {
-		e.GET("/token", (&handler.TokenHandler{BaseHandler: baseHandler}).Request, custommiddleware.IPRestriction())
+		tokenHandler := handler.NewTokenHandler(baseHandler)
+		e.GET("/token", tokenHandler.Request, custommiddleware.IPRestriction())
 	}
 	jwtconfig := echojwt.Config{
 		Skipper: custommiddleware.OptionsMethodSkipper,
@@ -60,12 +61,13 @@ func main() {
 		},
 		SigningKey: []byte(actor.TokenSecret),
 	}
-	e.GET("/", (&handler.ImageReductionHandler{BaseHandler: baseHandler}).Request)
-	e.POST("/", (&handler.ImageReductionHandler{BaseHandler: baseHandler}).Upload, echojwt.WithConfig(jwtconfig))
-	e.GET("/files", (&handler.ImageReductionHandler{BaseHandler: baseHandler}).RequestFile)
-	e.POST("/files", (&handler.ImageReductionHandler{BaseHandler: baseHandler}).UploadFile, echojwt.WithConfig(jwtconfig))
-	e.GET("/streaming", (&handler.ImageReductionHandler{BaseHandler: baseHandler}).RequestStreaming)
-	e.GET("/info", (&handler.ImageReductionHandler{BaseHandler: baseHandler}).RequestInfo)
+	imageReductorHandler := handler.NewImageReductionHandler(baseHandler)
+	e.GET("/", imageReductorHandler.Request)
+	e.POST("/", imageReductorHandler.Upload, echojwt.WithConfig(jwtconfig))
+	e.GET("/files", imageReductorHandler.RequestFile)
+	e.POST("/files", imageReductorHandler.UploadFile, echojwt.WithConfig(jwtconfig))
+	e.GET("/streaming", imageReductorHandler.RequestStreaming)
+	e.GET("/info", imageReductorHandler.RequestInfo)
 
 	if err := e.Start(":" + defaultPort); err != nil {
 		log.Fatal(err)

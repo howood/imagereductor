@@ -15,8 +15,12 @@ type TokenHandler struct {
 	BaseHandler
 }
 
+func NewTokenHandler(baseHandler BaseHandler) *TokenHandler {
+	return &TokenHandler{BaseHandler: baseHandler}
+}
+
 // Request is get from storage.
-func (th TokenHandler) Request(c *echo.Context) error {
+func (th *TokenHandler) Request(c *echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())

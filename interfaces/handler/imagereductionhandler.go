@@ -26,6 +26,10 @@ type ImageReductionHandler struct {
 	BaseHandler
 }
 
+func NewImageReductionHandler(baseHandler BaseHandler) *ImageReductionHandler {
+	return &ImageReductionHandler{BaseHandler: baseHandler}
+}
+
 // Request is get from storage.
 func (irh *ImageReductionHandler) Request(c *echo.Context) error {
 	requesturi := c.Request().URL.RequestURI()
