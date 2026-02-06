@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"time"
 
@@ -70,6 +69,6 @@ func main() {
 	e.GET("/info", imageReductorHandler.RequestInfo)
 
 	if err := e.Start(":" + defaultPort); err != nil {
-		log.Fatal(err)
+		e.Logger.Error("failed to start server", "error", err)
 	}
 }
