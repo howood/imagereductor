@@ -94,7 +94,7 @@ func init() {
 
 // Debug log output with Debug.
 func Debug(ctx context.Context, msg ...any) {
-	_, filename, line, _ := runtime.Caller(2)
+	_, filename, line, _ := runtime.Caller(1)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Debug(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
