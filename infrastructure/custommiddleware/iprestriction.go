@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // IPRestriction permit access by IP address.
@@ -37,7 +37,7 @@ func init() {
 
 func IPRestriction() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			if !ipRestrictionEnabled {
 				return next(c)
 			}

@@ -7,7 +7,7 @@ import (
 	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/infrastructure/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // TokenHandler struct.
@@ -16,7 +16,7 @@ type TokenHandler struct {
 }
 
 // Request is get from storage.
-func (th TokenHandler) Request(c echo.Context) error {
+func (th TokenHandler) Request(c *echo.Context) error {
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())

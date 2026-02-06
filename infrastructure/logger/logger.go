@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const packegeName = "imagereductor"
+const packageName = "imagereductor"
 
 const (
 	logModeFew    = "few"
@@ -94,7 +94,7 @@ func init() {
 
 // Debug log output with Debug.
 func Debug(ctx context.Context, msg ...any) {
-	_, filename, line, _ := runtime.Caller(1)
+	_, filename, line, _ := runtime.Caller(2)
 	file := filename + ":" + strconv.Itoa(line)
 	log.Debug(fmt.Sprintf("%v", msg[0]), metadataFields(ctx, file, msg)...)
 }
@@ -140,7 +140,7 @@ func metadataFields(ctx context.Context, file string, msgs []any) []zap.Field {
 		messages = msgs[1:]
 	}
 	return []zap.Field{
-		zap.String("PackegeName", packegeName),
+		zap.String("PackageName", packageName),
 		zap.String("file", file),
 		zap.Any(requestid.KeyRequestID, ctx.Value(requestid.GetRequestIDKey())),
 		zap.Any("messages", messages),
