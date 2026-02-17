@@ -117,8 +117,8 @@ github.com/googleapis/gax-go/v2 v2.17.0 h1:RksgfBpxqff0EZkDWYuz9q/uWsTVz+kf43LsZ
 github.com/googleapis/gax-go/v2 v2.17.0/go.mod h1:mzaqghpQp4JDh3HvADwrat+6M3MOIDp5YKHhb9PAgDY=
 github.com/labstack/echo-jwt/v5 v5.0.0 h1:uPp+FpkI/PKpMPPygtnK3RQOpg5a2wlM04UgfpWLVyI=
 github.com/labstack/echo-jwt/v5 v5.0.0/go.mod h1:RYF2ojWXbaY09QQ5J9vVtPUtkyI5UztS0gJotmCRz/U=
-github.com/labstack/echo/v5 v5.0.2 h1:DwPe1Rla27Zf3QxbW+DxhPKRIbKHHTgHQyaLJC2gE3s=
-github.com/labstack/echo/v5 v5.0.2/go.mod h1:SyvlSdObGjRXeQfCCXW/sybkZdOOQZBmpKF0bvALaeo=
+github.com/labstack/echo/v5 v5.0.3 h1:Jql8sDtCYXrhh2Mbs6jKwjR6r7X8FSQQmch+w6QS7kc=
+github.com/labstack/echo/v5 v5.0.3/go.mod h1:SyvlSdObGjRXeQfCCXW/sybkZdOOQZBmpKF0bvALaeo=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 h1:GFCKgmp0tecUJ0sJuv4pzYCqS9+RGSn52M3FUwPs+uo=
