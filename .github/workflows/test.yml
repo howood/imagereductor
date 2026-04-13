@@ -14,15 +14,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       id-token: write
       contents: read
+      pull-requests: write
     steps:
     - uses: actions/checkout@v6
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version: '1.26'
 
     - name: Build
       run: go build -v ./...
@@ -34,7 +36,7 @@ jobs:
       run: make coverage
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         files: ./coverage.out
         flags: unittests
@@ -43,7 +45,7 @@ jobs:
         verbose: true
 
     - name: Upload coverage reports to GitHub
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-report
         path: |
@@ -53,6 +55,6 @@ jobs:
 
     - name: Comment coverage on PR
       if: github.event_name == 'pull_request'
-      uses: k1LoW/octocov-action@v1
+      uses: k1LoW/octocov-action@v1.5.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,4 @@
-FROM golang:1.25 AS build-env
+FROM golang:1.26 AS build-env
 
 WORKDIR /go/src/github.com/howood/imagereductor
 
