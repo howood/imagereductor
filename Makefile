@@ -32,11 +32,11 @@ coverage-view:
 	open coverage.html || xdg-open coverage.html || start coverage.html
 
 lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.6.2 &&  \
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.11.4 &&  \
 	./bin/golangci-lint run ./...
 
 fmt:
-	go install golang.org/x/tools/cmd/goimports@v0.37.0
+	go install golang.org/x/tools/cmd/goimports@v0.44.0
 	go install mvdan.cc/gofumpt@v0.9.1
 	goimports -w .
 	gofumpt -w .

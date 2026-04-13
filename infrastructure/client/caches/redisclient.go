@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"time"
 
 	log "github.com/howood/imagereductor/infrastructure/logger"
@@ -152,7 +153,8 @@ func createNewConnect(ctx context.Context, redisdb int, connectionkey int) error
 		}
 		// Optional: custom CA certificate
 		if caCertPath := os.Getenv("REDISTLS_CA_CERT"); caCertPath != "" {
-			caCert, err := os.ReadFile(caCertPath)
+			cleanCertPath := filepath.Clean(caCertPath)
+			caCert, err := os.ReadFile(cleanCertPath)
 			if err != nil {
 				log.Warn(ctx, "Failed to read CA certificate: "+err.Error())
 			} else {

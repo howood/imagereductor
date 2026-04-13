@@ -74,8 +74,8 @@ func (cc *GoCacheClient) CloseConnect() error {
 func (cc *GoCacheClient) getInstance(ctx context.Context, key string) *cache.Cache {
 	// djb2 algorithm
 	hash := uint32(5381)
-	for _, c := range key {
-		hash = ((hash << 5) + hash) + uint32(c)
+	for i := range len(key) {
+		hash = ((hash << 5) + hash) + uint32(key[i])
 	}
 	i := int(hash) % NumInstance
 	log.Debug(ctx, fmt.Sprintf("get_instance: %d", i))
