@@ -1,6 +1,7 @@
 package custommiddleware_test
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,13 +27,13 @@ func Test_RateLimiter_AllowsAndBlocks(t *testing.T) {
 	mw := rl.Middleware()
 
 	exec := func() int {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		err := mw(func(_ *echo.Context) error {
 			return nil
 		})(c)
-		if httpErr, ok := err.(*echo.HTTPError); ok {
+		if httpErr := new(echo.HTTPError); errors.As(err, &httpErr) {
 			return httpErr.Code
 		}
 		return http.StatusOK
@@ -59,7 +60,7 @@ func Test_RateLimiter_Skipper(t *testing.T) {
 	e := echo.New()
 	mw := rl.Middleware()
 	for range 5 {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		if err := mw(func(_ *echo.Context) error { return nil })(c); err != nil {
@@ -80,7 +81,7 @@ func Test_RateLimiter_Defaults(t *testing.T) {
 	}
 	// Use default key func + default error msg
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	mw := rl.Middleware()
@@ -107,7 +108,7 @@ func Test_RateLimiter_MaxKeysEviction(t *testing.T) {
 	e := echo.New()
 	mw := rl.Middleware()
 	for range 3 {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		if err := mw(func(_ *echo.Context) error { return nil })(c); err != nil {
@@ -121,7 +122,7 @@ func Test_IPKeyFunc(t *testing.T) {
 	t.Parallel()
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req.RemoteAddr = "10.0.0.1:1234"
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -135,7 +136,7 @@ func Test_APIKeyFunc(t *testing.T) {
 
 	e := echo.New()
 	// with auth header
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer abc")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -143,7 +144,7 @@ func Test_APIKeyFunc(t *testing.T) {
 		t.Fatalf("APIKeyFunc with auth = %q, want api:Bearer abc", got)
 	}
 	// without auth header -> falls back to IP
-	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2 := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req2.RemoteAddr = "10.0.0.5:1234"
 	rec2 := httptest.NewRecorder()
 	c2 := e.NewContext(req2, rec2)
@@ -152,7 +153,7 @@ func Test_APIKeyFunc(t *testing.T) {
 	}
 }
 
-// ensure cleanup loop time.Tick path isn't a panic risk (limited duration)
+// ensure cleanup loop time.Tick path isn't a panic risk (limited duration).
 func Test_RateLimiter_Cleanup_NoPanic(t *testing.T) {
 	t.Parallel()
 

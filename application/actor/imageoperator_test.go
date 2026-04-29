@@ -15,8 +15,8 @@ import (
 func newTestPNGReader(t *testing.T, w, h int) *bytes.Reader {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
+	for y := range h {
+		for x := range w {
 			img.Set(x, y, color.RGBA{R: 100, G: 150, B: 200, A: 255})
 		}
 	}
@@ -67,7 +67,6 @@ func Test_ImageOperator_DecodeAndProcess_JPEG_QualityVariants(t *testing.T) {
 	t.Parallel()
 
 	for _, quality := range []int{1, 2, 3, 4, 99} {
-		quality := quality
 		t.Run("quality_"+itoa(quality), func(t *testing.T) {
 			t.Parallel()
 			op := actor.NewImageOperator("image/jpeg", actor.ImageOperatorOption{

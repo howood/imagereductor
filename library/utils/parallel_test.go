@@ -28,7 +28,7 @@ func Test_ApplyParallel(t *testing.T) {
 	if int(counter) < end-start {
 		t.Fatalf("ApplyParallel processed less than expected: got %d, want >= %d", counter, end-start)
 	}
-	for i := start; i < end; i++ {
+	for i := range end {
 		if _, ok := visited[i]; !ok {
 			t.Fatalf("ApplyParallel missed index %d", i)
 		}

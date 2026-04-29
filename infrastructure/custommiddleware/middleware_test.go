@@ -22,7 +22,7 @@ func Test_OptionsMethodSkipper(t *testing.T) {
 		{http.MethodPost, false},
 	}
 	for _, tc := range cases {
-		req := httptest.NewRequest(tc.method, "/", nil)
+		req := httptest.NewRequestWithContext(t.Context(), tc.method, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		if got := custommiddleware.OptionsMethodSkipper(c); got != tc.want {
@@ -38,7 +38,7 @@ func Test_IPRestriction_AllowsLocalhost(t *testing.T) {
 	// also the pass-through target when IP restriction is disabled, so this works in
 	// both configurations.
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req.RemoteAddr = "127.0.0.1:1234"
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -78,7 +78,7 @@ func Test_JSONRequestLogger_Middleware(t *testing.T) {
 		return c.String(http.StatusOK, "pong")
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/ping", nil)
 	req.Header.Set(echo.HeaderContentLength, "0")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)

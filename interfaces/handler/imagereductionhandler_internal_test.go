@@ -16,9 +16,9 @@ func newEchoCtx(method, target string, body string) *echo.Context {
 	e := echo.New()
 	var req *http.Request
 	if body == "" {
-		req = httptest.NewRequest(method, target, nil)
+		req = httptest.NewRequestWithContext(context.Background(), method, target, nil)
 	} else {
-		req = httptest.NewRequest(method, target, strings.NewReader(body))
+		req = httptest.NewRequestWithContext(context.Background(), method, target, strings.NewReader(body))
 		req.Header.Set(echo.HeaderContentType, "application/x-www-form-urlencoded")
 	}
 	rec := httptest.NewRecorder()
@@ -146,9 +146,9 @@ func Test_getImageOptionByFormValue_InvalidWidth(t *testing.T) {
 }
 
 func errFromString(s string) error {
-	return &simpleErr{msg: s}
+	return &simpleError{msg: s}
 }
 
-type simpleErr struct{ msg string }
+type simpleError struct{ msg string }
 
-func (e *simpleErr) Error() string { return e.msg }
+func (e *simpleError) Error() string { return e.msg }

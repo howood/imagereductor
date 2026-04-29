@@ -21,8 +21,8 @@ func (f *fakeMultipartFile) Close() error { return nil }
 func newPNGMultipart(t *testing.T, w, h int) multipart.File {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
+	for y := range h {
+		for x := range w {
 			img.Set(x, y, color.RGBA{R: 1, G: 2, B: 3, A: 255})
 		}
 	}
@@ -59,5 +59,5 @@ func Test_validateUploadedImage_ExceedsWidth(t *testing.T) {
 	}
 }
 
-// silence unused import
+// silence unused import.
 var _ = textproto.CanonicalMIMEHeaderKey

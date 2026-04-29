@@ -10,16 +10,21 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
+var (
+	errSomeFailure  = errors.New("some failure")
+	errStatusNotFnd = errors.New("status code: 404 not found")
+)
+
 func Test_BaseHandler_errorResponse(t *testing.T) {
 	t.Parallel()
 
 	bh := BaseHandler{}
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	err := bh.errorResponse(context.Background(), c, http.StatusBadRequest, errors.New("some failure"))
+	err := bh.errorResponse(context.Background(), c, http.StatusBadRequest, errSomeFailure)
 	if err != nil {
 		t.Fatalf("errorResponse returned error: %v", err)
 	}
@@ -33,11 +38,11 @@ func Test_BaseHandler_errorResponse_NotFound(t *testing.T) {
 
 	bh := BaseHandler{}
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	err := bh.errorResponse(context.Background(), c, http.StatusBadRequest, errors.New("status code: 404 not found"))
+	err := bh.errorResponse(context.Background(), c, http.StatusBadRequest, errStatusNotFnd)
 	if err != nil {
 		t.Fatalf("unexpected: %v", err)
 	}
@@ -74,7 +79,7 @@ func Test_BaseHandler_setResponseHeader(t *testing.T) {
 
 	bh := BaseHandler{}
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -95,7 +100,7 @@ func Test_BaseHandler_setResponseHeader_NoExpires(t *testing.T) {
 
 	bh := BaseHandler{}
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
