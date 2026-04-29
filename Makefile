@@ -13,13 +13,13 @@ run:
 	go run ./imagereductor/imagereductor.go -v
 
 test:
-	go test ./...
+	TOKEN_SECRET=test_secret_for_unittest_xxxxxxxxxxxx go test ./...
 
 testv:
-	go test ./... -v
+	TOKEN_SECRET=test_secret_for_unittest_xxxxxxxxxxxx go test ./... -v
 
 coverage:
-	go test ./... -coverprofile=coverage.out -covermode=atomic
+	TOKEN_SECRET=test_secret_for_unittest_xxxxxxxxxxxx go test ./... -coverprofile=coverage.out -covermode=atomic
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 	@go tool cover -func=coverage.out | grep total | awk '{print "Total coverage: " $$3}'
