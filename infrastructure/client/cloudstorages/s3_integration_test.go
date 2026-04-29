@@ -3,6 +3,7 @@ package cloudstorages_test
 import (
 	"bytes"
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -50,6 +51,8 @@ func setupMinIO(t *testing.T) *cloudstorages.S3Instance {
 }
 
 func TestS3Integration_PutAndGet(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -77,6 +80,8 @@ func TestS3Integration_PutAndGet(t *testing.T) {
 }
 
 func TestS3Integration_GetByStreaming(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -109,6 +114,8 @@ func TestS3Integration_GetByStreaming(t *testing.T) {
 }
 
 func TestS3Integration_GetObjectInfo(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -135,6 +142,8 @@ func TestS3Integration_GetObjectInfo(t *testing.T) {
 }
 
 func TestS3Integration_List(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -158,20 +167,15 @@ func TestS3Integration_List(t *testing.T) {
 		t.Fatalf("List len = %d, want 3; got %v", len(names), names)
 	}
 	for _, k := range keys {
-		found := false
-		for _, n := range names {
-			if n == k {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(names, k) {
 			t.Fatalf("List missing key %s", k)
 		}
 	}
 }
 
 func TestS3Integration_Delete(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -195,6 +199,8 @@ func TestS3Integration_Delete(t *testing.T) {
 }
 
 func TestS3Integration_PutDetectsContentType(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}

@@ -44,6 +44,8 @@ func setupFakeGCS(t *testing.T) *cloudstorages.GCSInstance {
 }
 
 func TestGCSIntegration_PutAndGet(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -67,6 +69,8 @@ func TestGCSIntegration_PutAndGet(t *testing.T) {
 }
 
 func TestGCSIntegration_GetByStreaming(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -96,6 +100,8 @@ func TestGCSIntegration_GetByStreaming(t *testing.T) {
 }
 
 func TestGCSIntegration_GetObjectInfo(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -119,6 +125,8 @@ func TestGCSIntegration_GetObjectInfo(t *testing.T) {
 }
 
 func TestGCSIntegration_List(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -144,6 +152,8 @@ func TestGCSIntegration_List(t *testing.T) {
 }
 
 func TestGCSIntegration_Delete(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -165,6 +175,8 @@ func TestGCSIntegration_Delete(t *testing.T) {
 }
 
 func TestGCSIntegration_MultipleObjects(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -175,7 +187,7 @@ func TestGCSIntegration_MultipleObjects(t *testing.T) {
 
 	for i := range 10 {
 		key := fmt.Sprintf("multi/obj_%d.txt", i)
-		if err := inst.Put(ctx, bucket, key, bytes.NewReader([]byte(fmt.Sprintf("data %d", i)))); err != nil {
+		if err := inst.Put(ctx, bucket, key, bytes.NewReader(fmt.Appendf(nil, "data %d", i))); err != nil {
 			t.Fatalf("Put %s: %v", key, err)
 		}
 	}
@@ -191,6 +203,8 @@ func TestGCSIntegration_MultipleObjects(t *testing.T) {
 
 // Verify no error for context.Background (no timeout).
 func TestGCSIntegration_NoTimeout(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
