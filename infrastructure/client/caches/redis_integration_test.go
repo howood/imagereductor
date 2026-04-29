@@ -43,7 +43,6 @@ func setupRedis(t *testing.T) *caches.RedisInstance {
 }
 
 func TestRedisIntegration_SetAndGet(t *testing.T) { //nolint:paralleltest
-
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -68,7 +67,6 @@ func TestRedisIntegration_SetAndGet(t *testing.T) { //nolint:paralleltest
 }
 
 func TestRedisIntegration_GetMiss(t *testing.T) { //nolint:paralleltest
-
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -86,7 +84,6 @@ func TestRedisIntegration_GetMiss(t *testing.T) { //nolint:paralleltest
 }
 
 func TestRedisIntegration_Del(t *testing.T) { //nolint:paralleltest
-
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -110,7 +107,6 @@ func TestRedisIntegration_Del(t *testing.T) { //nolint:paralleltest
 }
 
 func TestRedisIntegration_DelBulk(t *testing.T) { //nolint:paralleltest
-
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -134,8 +130,7 @@ func TestRedisIntegration_DelBulk(t *testing.T) { //nolint:paralleltest
 	}
 }
 
-func TestRedisIntegration_CloseConnect_Persistent(t *testing.T) { //nolint:paralleltest
-
+func TestRedisIntegration_CloseConnect_Persistent(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}

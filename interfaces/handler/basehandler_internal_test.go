@@ -111,7 +111,7 @@ func Test_BaseHandler_setResponseHeader_NoExpires(t *testing.T) {
 	}
 }
 
-func Test_BaseHandler_setExpires(t *testing.T) { //nolint:paralleltest
+func Test_BaseHandler_setExpires(t *testing.T) {
 	t.Setenv("HEADEREXPIRED", "600")
 	bh := BaseHandler{}
 	base := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -126,7 +126,7 @@ func Test_BaseHandler_setExpires(t *testing.T) { //nolint:paralleltest
 	}
 }
 
-func Test_BaseHandler_getHeaderExpires_Default(t *testing.T) { //nolint:paralleltest
+func Test_BaseHandler_getHeaderExpires_Default(t *testing.T) {
 	t.Setenv("HEADEREXPIRED", "")
 	bh := BaseHandler{}
 	got := bh.getHeaderExpires()
@@ -135,7 +135,7 @@ func Test_BaseHandler_getHeaderExpires_Default(t *testing.T) { //nolint:parallel
 	}
 }
 
-func Test_BaseHandler_getHeaderExpires_Custom(t *testing.T) { //nolint:paralleltest
+func Test_BaseHandler_getHeaderExpires_Custom(t *testing.T) {
 	t.Setenv("HEADEREXPIRED", "120")
 	bh := BaseHandler{}
 	got := bh.getHeaderExpires()
