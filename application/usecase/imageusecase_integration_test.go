@@ -2,6 +2,9 @@ package usecase_test
 
 import (
 	"bytes"
+	"image"
+	"image/color"
+	"image/png"
 	"testing"
 	"time"
 
@@ -11,6 +14,21 @@ import (
 	"github.com/howood/imagereductor/application/usecase"
 	"github.com/howood/imagereductor/infrastructure/client/cloudstorages"
 )
+
+func createTestPNG(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	for y := range 100 {
+		for x := range 100 {
+			img.Set(x, y, color.RGBA{R: 255, G: 0, B: 0, A: 255})
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	return buf.Bytes()
+}
 
 type testSetup struct {
 	uc  *usecase.ImageUsecase
@@ -176,4 +194,94 @@ func TestImageUsecase_UploadToStorage_WithBytes(t *testing.T) {
 	if !bytes.Equal(got, data) {
 		t.Fatalf("data mismatch")
 	}
+}
+
+func TestImageUsecase_GetImage_WithResize(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	pngData := createTestPNG(t)
+	if err := s.csa.Put(ctx, "img/resize.png", bytes.NewReader(pngData)); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	opt := actor.ImageOperatorOption{Width: 50, Height: 50}
+	contenttype, data, err := s.uc.GetImage(ctx, opt, "img/resize.png")
+	if err != nil {
+		t.Fatalf("GetImage: %v", err)
+	}
+	if contenttype != "image/png" {
+		t.Fatalf("contenttype = %q, want image/png", contenttype)
+	}
+	if len(data) == 0 {
+		t.Fatal("expected non-empty resized image")
+	}
+}
+
+func TestImageUsecase_ConvertImage(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	pngData := createTestPNG(t)
+	reader := bytes.NewReader(pngData)
+
+	opt := actor.ImageOperatorOption{Width: 30, Height: 30}
+	result, err := s.uc.ConvertImage(ctx, opt, newFakeMultipartFile(reader))
+	if err != nil {
+		t.Fatalf("ConvertImage: %v", err)
+	}
+	if len(result) == 0 {
+		t.Fatal("expected non-empty converted image")
+	}
+}
+
+func TestImageUsecase_UploadToStorage_WithReader(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	content := []byte("uploaded via reader")
+	reader := bytes.NewReader(content)
+
+	if err := s.uc.UploadToStorage(ctx, "up/reader.txt", newFakeMultipartFile(reader), nil); err != nil {
+		t.Fatalf("UploadToStorage: %v", err)
+	}
+
+	_, got, err := s.uc.GetFile(ctx, "up/reader.txt")
+	if err != nil {
+		t.Fatalf("GetFile: %v", err)
+	}
+	if !bytes.Equal(got, content) {
+		t.Fatalf("data mismatch")
+	}
+}
+
+// fakeMultipartFile implements multipart.File using bytes.Reader.
+type fakeMultipartFile struct {
+	*bytes.Reader
+}
+
+func newFakeMultipartFile(r *bytes.Reader) *fakeMultipartFile {
+	return &fakeMultipartFile{Reader: r}
+}
+
+func (f *fakeMultipartFile) Close() error {
+	return nil
 }
