@@ -95,33 +95,25 @@ func (rl *RateLimiter) Middleware() echo.MiddlewareFunc {
 
 func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 	now := time.Now()
-	rl.mutex.RLock()
+
+	rl.mutex.Lock()
+	defer rl.mutex.Unlock()
+
 	entry, exists := rl.limiters[key]
-	rl.mutex.RUnlock()
-
 	if !exists {
-		rl.mutex.Lock()
-		// Double-check after acquiring write lock
-		entry, exists = rl.limiters[key]
-		if !exists {
-			// Check if we've reached the maximum number of keys
-			if rl.config.MaxKeys > 0 && len(rl.limiters) >= rl.config.MaxKeys {
-				// Evict oldest entry (simple LRU)
-				rl.evictOldest()
-			}
-
-			entry = &limiterEntry{
-				limiter:    rate.NewLimiter(rl.config.Rate, rl.config.Burst),
-				lastAccess: now,
-			}
-			rl.limiters[key] = entry
+		// Check if we've reached the maximum number of keys
+		if rl.config.MaxKeys > 0 && len(rl.limiters) >= rl.config.MaxKeys {
+			// Evict oldest entry (simple LRU)
+			rl.evictOldest()
 		}
-		rl.mutex.Unlock()
+
+		entry = &limiterEntry{
+			limiter:    rate.NewLimiter(rl.config.Rate, rl.config.Burst),
+			lastAccess: now,
+		}
+		rl.limiters[key] = entry
 	} else {
-		// Update last access time
-		rl.mutex.Lock()
 		entry.lastAccess = now
-		rl.mutex.Unlock()
 	}
 
 	return entry.limiter

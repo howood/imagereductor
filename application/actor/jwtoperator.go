@@ -31,7 +31,7 @@ func init() {
 		log.Fatal(ctx, "TOKEN_SECRET environment variable must be set for security")
 	}
 	if len(TokenSecret) < minTokenSecretLength {
-		log.Warn(ctx, "TOKEN_SECRET is too short. Recommend at least 32 characters for security")
+		log.Fatal(ctx, "TOKEN_SECRET is too short. Must be at least 32 characters for security")
 	}
 }
 
