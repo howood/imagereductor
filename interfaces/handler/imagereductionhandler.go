@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -30,19 +31,45 @@ func NewImageReductionHandler(baseHandler BaseHandler) *ImageReductionHandler {
 	return &ImageReductionHandler{BaseHandler: baseHandler}
 }
 
+// normalizeCacheKey builds a deterministic cache key from form parameters
+// to prevent cache poisoning via arbitrary query parameter injection.
+func normalizeCacheKey(c *echo.Context) string {
+	params := c.Request().URL.Query()
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var sb strings.Builder
+	sb.WriteString(c.Request().URL.Path)
+	sb.WriteByte('?')
+	for i, k := range keys {
+		if i > 0 {
+			sb.WriteByte('&')
+		}
+		sb.WriteString(k)
+		sb.WriteByte('=')
+		sb.WriteString(params.Get(k))
+	}
+	return sb.String()
+}
+
 // Request is get from storage.
 func (irh *ImageReductionHandler) Request(c *echo.Context) error {
-	requesturi := c.Request().URL.RequestURI()
+	cacheKey := normalizeCacheKey(c)
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
-	log.Info(ctx, "========= START REQUEST : "+requesturi)
+	log.Info(ctx, "========= START REQUEST : "+cacheKey)
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
-	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, requesturi) {
+	if err := validator.NewStorageKeyValidator().Validate(c.FormValue(config.FormKeyStorageKey)); err != nil {
+		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
+	}
+	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, cacheKey) {
 		log.Info(ctx, "cache hit!")
 		return nil
 	}
@@ -56,7 +83,7 @@ func (irh *ImageReductionHandler) Request(c *echo.Context) error {
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
-	irh.setCache(ctx, contenttype, imagebyte, requesturi)
+	irh.setCache(ctx, contenttype, imagebyte, cacheKey)
 	irh.setResponseHeader(
 		c,
 		irh.setNewLatsModified(),
@@ -69,17 +96,20 @@ func (irh *ImageReductionHandler) Request(c *echo.Context) error {
 
 // RequestFile is get non image file from storage.
 func (irh *ImageReductionHandler) RequestFile(c *echo.Context) error {
-	requesturi := c.Request().URL.RequestURI()
+	cacheKey := normalizeCacheKey(c)
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
-	log.Info(ctx, "========= START REQUEST : "+requesturi)
+	log.Info(ctx, "========= START REQUEST : "+cacheKey)
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
-	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, requesturi) {
+	if err := validator.NewStorageKeyValidator().Validate(c.FormValue(config.FormKeyStorageKey)); err != nil {
+		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
+	}
+	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, cacheKey) {
 		log.Info(ctx, "cache hit!")
 		return nil
 	}
@@ -89,7 +119,7 @@ func (irh *ImageReductionHandler) RequestFile(c *echo.Context) error {
 	if err != nil {
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
-	irh.setCache(ctx, contenttype, filebyte, requesturi)
+	irh.setCache(ctx, contenttype, filebyte, cacheKey)
 	irh.setResponseHeader(
 		c,
 		irh.setNewLatsModified(),
@@ -102,15 +132,17 @@ func (irh *ImageReductionHandler) RequestFile(c *echo.Context) error {
 
 // RequestStreaming is get non image file from storage by streaming.
 func (irh *ImageReductionHandler) RequestStreaming(c *echo.Context) error {
-	requesturi := c.Request().URL.RequestURI()
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
-	log.Info(ctx, "========= START REQUEST : "+requesturi)
+	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
+	}
+	if err := validator.NewStorageKeyValidator().Validate(c.FormValue(config.FormKeyStorageKey)); err != nil {
+		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
 	}
 	// get from storage
 	contenttype, contentLength, response, err := irh.UcCluster.ImageUC.GetFileStream(ctx, c.FormValue(config.FormKeyStorageKey))
@@ -138,17 +170,20 @@ func (irh *ImageReductionHandler) RequestStreaming(c *echo.Context) error {
 
 // RequestInfo is get info from storage.
 func (irh *ImageReductionHandler) RequestInfo(c *echo.Context) error {
-	requesturi := c.Request().URL.RequestURI()
+	cacheKey := normalizeCacheKey(c)
 	xRequestID := requestid.GetRequestID(c.Request())
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
-	log.Info(ctx, "========= START REQUEST : "+requesturi)
+	log.Info(ctx, "========= START REQUEST : "+cacheKey)
 	log.Info(ctx, c.Request().Method)
 	log.Info(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
 	}
-	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, requesturi) {
+	if err := validator.NewStorageKeyValidator().Validate(c.FormValue(config.FormKeyStorageKey)); err != nil {
+		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
+	}
+	if c.FormValue(config.FormKeyNonUseCache) != config.FormValueTrue && irh.getCache(ctx, c, cacheKey) {
 		log.Info(ctx, "cache hit!")
 		return nil
 	}
@@ -160,7 +195,7 @@ func (irh *ImageReductionHandler) RequestInfo(c *echo.Context) error {
 	if infoByteData, err := irh.jsonToByte(objectInfo); err != nil {
 		log.Error(ctx, err)
 	} else {
-		irh.setCache(ctx, echo.MIMEApplicationJSON, infoByteData, requesturi)
+		irh.setCache(ctx, echo.MIMEApplicationJSON, infoByteData, cacheKey)
 	}
 	return c.JSONPretty(http.StatusOK, objectInfo, marshalIndent)
 }
@@ -328,6 +363,10 @@ func (irh *ImageReductionHandler) getCropParam(ctx context.Context, cropparam st
 			//nolint:err113
 			err = errors.New("invalid crop parameter")
 			return [4]int{}, err
+		}
+		if intcrop < 0 {
+			//nolint:err113
+			return [4]int{}, errors.New("crop parameter must not be negative")
 		}
 		intslicecrops = append(intslicecrops, intcrop)
 	}
