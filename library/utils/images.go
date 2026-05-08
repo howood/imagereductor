@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"io"
 	"net/http"
 )
@@ -13,7 +14,7 @@ func GetContentTypeByReadSeeker(reader io.ReadSeeker) (string, error) {
 	}
 	buf := make([]byte, 512) //nolint:mnd
 	n, err := reader.Read(buf)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return "", err
 	}
 	return http.DetectContentType(buf[:n]), nil

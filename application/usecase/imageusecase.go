@@ -14,6 +14,9 @@ import (
 	"github.com/howood/imagereductor/library/utils"
 )
 
+// ErrReaderNotReadSeeker is returned when the reader does not implement io.ReadSeeker.
+var ErrReaderNotReadSeeker = errors.New("reader does not implement io.ReadSeeker")
+
 type ImageUsecase struct {
 	cloudstorage *storageservice.CloudStorageAssessor
 }
@@ -122,7 +125,7 @@ func (iu *ImageUsecase) UploadToStorage(ctx context.Context, formKeyPath string,
 	}
 	rs, ok := reader.(io.ReadSeeker)
 	if !ok {
-		return errors.New("reader does not implement io.ReadSeeker")
+		return ErrReaderNotReadSeeker
 	}
 	return iu.cloudstorage.Put(ctx, formKeyPath, rs)
 }
