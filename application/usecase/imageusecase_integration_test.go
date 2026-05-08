@@ -2,9 +2,11 @@ package usecase_test
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"image/color"
 	"image/png"
+	"io"
 	"testing"
 	"time"
 
@@ -300,5 +302,164 @@ func TestImageUsecase_UploadToStorage_NotReadSeeker(t *testing.T) {
 	// fakeMultipartFile embeds *bytes.Reader which IS io.ReadSeeker, so this should succeed.
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestImageUsecase_GetImage_StorageGetError(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	_, _, err := s.uc.GetImage(ctx, actor.ImageOperatorOption{}, "missing/key.png")
+	if err == nil {
+		t.Fatal("expected error for missing key, got nil")
+	}
+}
+
+func TestImageUsecase_GetImage_DecodeError(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	// Put non-image data and request resize so Decode is invoked.
+	if err := s.csa.Put(ctx, "img/notimage.bin", bytes.NewReader([]byte("not-an-image"))); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	_, _, err := s.uc.GetImage(ctx, actor.ImageOperatorOption{Width: 10, Height: 10}, "img/notimage.bin")
+	if err == nil {
+		t.Fatal("expected decode error, got nil")
+	}
+}
+
+func TestImageUsecase_GetImage_ProcessError(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	pngData := createTestPNG(t)
+	if err := s.csa.Put(ctx, "img/processfail.png", bytes.NewReader(pngData)); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	// Invalid Rotate value triggers Process error.
+	opt := actor.ImageOperatorOption{Rotate: "invalid_value"}
+	_, _, err := s.uc.GetImage(ctx, opt, "img/processfail.png")
+	if err == nil {
+		t.Fatal("expected process error, got nil")
+	}
+}
+
+// nonReadSeekerFile implements multipart.File but does NOT implement io.ReadSeeker
+// (Seek returns an error, but the type assertion to io.ReadSeeker still succeeds
+// because multipart.File embeds io.Seeker). Use a wrapper that hides ReadSeeker.
+type nonReadSeekerFile struct{}
+
+func (nonReadSeekerFile) Read(_ []byte) (int, error)                  { return 0, io.EOF }
+func (nonReadSeekerFile) Close() error                                { return nil }
+func (nonReadSeekerFile) Seek(_ int64, _ int) (int64, error)          { return 0, errSeekFailed }
+func (nonReadSeekerFile) ReadAt(_ []byte, _ int64) (int, error)       { return 0, io.EOF }
+
+var errSeekFailed = errors.New("seek failed")
+
+func TestImageUsecase_ConvertImage_NoOption(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	result, err := s.uc.ConvertImage(ctx, actor.ImageOperatorOption{}, newFakeMultipartFile(bytes.NewReader([]byte("data"))))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Fatalf("expected nil result, got %d bytes", len(result))
+	}
+}
+
+func TestImageUsecase_ConvertImage_SeekError(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	opt := actor.ImageOperatorOption{Width: 10, Height: 10}
+	_, err := s.uc.ConvertImage(ctx, opt, nonReadSeekerFile{})
+	if err == nil {
+		t.Fatal("expected seek error, got nil")
+	}
+}
+
+func TestImageUsecase_ConvertImage_DecodeError(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	opt := actor.ImageOperatorOption{Width: 10, Height: 10}
+	_, err := s.uc.ConvertImage(ctx, opt, newFakeMultipartFile(bytes.NewReader([]byte("not-an-image"))))
+	if err == nil {
+		t.Fatal("expected decode error, got nil")
+	}
+}
+
+func TestImageUsecase_ConvertImage_ProcessError(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	pngData := createTestPNG(t)
+	opt := actor.ImageOperatorOption{Rotate: "invalid_value"}
+	_, err := s.uc.ConvertImage(ctx, opt, newFakeMultipartFile(bytes.NewReader(pngData)))
+	if err == nil {
+		t.Fatal("expected process error, got nil")
+	}
+}
+
+func TestImageUsecase_UploadToStorage_SeekError(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	err := s.uc.UploadToStorage(ctx, "up/seekfail.txt", nonReadSeekerFile{}, nil)
+	if err == nil {
+		t.Fatal("expected seek error, got nil")
 	}
 }
