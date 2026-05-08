@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"io"
 	"testing"
 	"time"
 
@@ -284,42 +283,6 @@ func newFakeMultipartFile(r *bytes.Reader) *fakeMultipartFile {
 }
 
 func (f *fakeMultipartFile) Close() error {
-	return nil
-}
-
-// nonSeekableFile implements multipart.File but NOT io.ReadSeeker.
-type nonSeekableFile struct{}
-
-func (f *nonSeekableFile) Read(p []byte) (int, error) {
-	return 0, io.EOF
-}
-
-func (f *nonSeekableFile) ReadAt(p []byte, off int64) (int, error) {
-	return 0, io.EOF
-}
-
-func (f *nonSeekableFile) Seek(offset int64, whence int) (int64, error) {
-	return 0, nil
-}
-
-func (f *nonSeekableFile) Close() error {
-	return nil
-}
-
-// wrappedNonSeeker wraps to hide io.ReadSeeker from the type assertion.
-type wrappedNonSeeker struct {
-	file *nonSeekableFile
-}
-
-func (w *wrappedNonSeeker) Read(p []byte) (int, error) {
-	return w.file.Read(p)
-}
-
-func (w *wrappedNonSeeker) Seek(offset int64, whence int) (int64, error) {
-	return w.file.Seek(offset, whence)
-}
-
-func (w *wrappedNonSeeker) Close() error {
 	return nil
 }
 

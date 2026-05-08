@@ -375,7 +375,7 @@ func TestImageReductionHandler_Upload(t *testing.T) {
 	}
 }
 
-func TestImageReductionHandler_Upload_PathTraversal(t *testing.T) { //nolint:paralleltest
+func TestImageReductionHandler_Upload_PathTraversal(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}

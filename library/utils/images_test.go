@@ -65,10 +65,12 @@ func Test_GetContentTypeByReadSeeker_SeekError(t *testing.T) {
 // failSeekReader always fails on Seek.
 type failSeekReader struct{}
 
-func (f *failSeekReader) Read(p []byte) (int, error) {
+var errSeekFailed = errors.New("seek failed")
+
+func (f *failSeekReader) Read(_ []byte) (int, error) {
 	return 0, nil
 }
 
-func (f *failSeekReader) Seek(offset int64, whence int) (int64, error) {
-	return 0, errors.New("seek failed")
+func (f *failSeekReader) Seek(_ int64, _ int) (int64, error) {
+	return 0, errSeekFailed
 }
