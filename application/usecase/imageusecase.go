@@ -55,9 +55,10 @@ func (iu *ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOpe
 			contenttype,
 			imageoption,
 		)
-		err = imageOperator.Decode(ctx, bytes.NewReader(imagebyte))
-		// Decode完了後、元のバイトスライスはピクセルデータに展開済みなので解放可能
+		// Decode用にReaderを作成した後、元のバイトスライスへの参照を切ってGC解放可能にする
+		reader := bytes.NewReader(imagebyte)
 		imagebyte = nil
+		err = imageOperator.Decode(ctx, reader)
 		if err != nil {
 			return contenttype, nil, err
 		}
