@@ -76,7 +76,7 @@ func TestCloudStorageAssessor_GetByStreaming(t *testing.T) {
 	if err := csa.Put(ctx, "stream/data.bin", bytes.NewReader(content)); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
-	_, rc, err := csa.GetByStreaming(ctx, "stream/data.bin")
+	_, _, rc, err := csa.GetByStreaming(ctx, "stream/data.bin")
 	if err != nil {
 		t.Fatalf("GetByStreaming: %v", err)
 	}

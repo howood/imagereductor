@@ -124,16 +124,17 @@ func (gcsinstance *GCSInstance) Get(ctx context.Context, bucket string, key stri
 }
 
 // GetByStreaming gets from storage by streaming.
-func (gcsinstance *GCSInstance) GetByStreaming(ctx context.Context, bucket string, key string) (string, io.ReadCloser, error) {
+func (gcsinstance *GCSInstance) GetByStreaming(ctx context.Context, bucket string, key string) (string, int, io.ReadCloser, error) {
 	log.Debug(ctx, bucket)
 	log.Debug(ctx, key)
 	reader, err := gcsinstance.client.Bucket(bucket).Object(key).NewReader(ctx)
 	if err != nil {
-		return "", nil, fmt.Errorf("get(stream) bucket=%s key=%s: %w", bucket, key, err)
+		return "", 0, nil, fmt.Errorf("get(stream) bucket=%s key=%s: %w", bucket, key, err)
 	}
 	// streaming なので Close は呼び出し側責務 (元のバグ: deferで即closeされていた)
 	contenttype := reader.Attrs.ContentType
-	return contenttype, reader, nil
+	contentLength := int(reader.Attrs.Size)
+	return contenttype, contentLength, reader, nil
 }
 
 // GetObjectInfo gets from storage.

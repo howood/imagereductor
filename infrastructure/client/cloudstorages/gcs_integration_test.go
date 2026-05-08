@@ -84,7 +84,7 @@ func TestGCSIntegration_GetByStreaming(t *testing.T) {
 		t.Fatalf("Put: %v", err)
 	}
 
-	_, rc, err := inst.GetByStreaming(ctx, bucket, "stream/data.bin")
+	_, contentLength, rc, err := inst.GetByStreaming(ctx, bucket, "stream/data.bin")
 	if err != nil {
 		t.Fatalf("GetByStreaming: %v", err)
 	}
@@ -96,6 +96,9 @@ func TestGCSIntegration_GetByStreaming(t *testing.T) {
 	}
 	if !bytes.Equal(buf.Bytes(), content) {
 		t.Fatalf("stream data mismatch")
+	}
+	if contentLength != len(content) {
+		t.Fatalf("contentLength = %d, want %d", contentLength, len(content))
 	}
 }
 

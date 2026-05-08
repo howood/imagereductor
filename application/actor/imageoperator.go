@@ -75,16 +75,17 @@ type subImager interface {
 func (im *imageCreator) Decode(ctx context.Context, src io.ReadSeeker) error {
 	var err error
 	im.object.Source, im.object.ImageName, err = image.Decode(src)
-	if err == nil && strings.HasPrefix(im.object.ContentType, "image/jpeg") {
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(im.object.ContentType, "image/jpeg") {
 		im.decodeExifOrientation(ctx, src)
 	}
-	if err == nil {
-		rectang := im.object.Source.Bounds()
-		im.object.OriginX = rectang.Bounds().Dx()
-		im.object.OriginY = rectang.Bounds().Dy()
-		log.Debug(ctx, fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
-	}
-	return err
+	rectang := im.object.Source.Bounds()
+	im.object.OriginX = rectang.Bounds().Dx()
+	im.object.OriginY = rectang.Bounds().Dy()
+	log.Debug(ctx, fmt.Sprintf("OriginX: %d / OriginY: %d", im.object.OriginX, im.object.OriginY))
+	return nil
 }
 
 // Process images process resize and more.

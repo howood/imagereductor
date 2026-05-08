@@ -50,19 +50,17 @@ func (iu *ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOpe
 		return contenttype, imagebyte, err
 	}
 	// resizing image
-	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
-		imageOperator := actor.NewImageOperator(
-			contenttype,
-			imageoption,
-		)
-		err = imageOperator.Decode(ctx, bytes.NewReader(imagebyte))
-		if err == nil {
-			err = imageOperator.Process(ctx)
-		}
-		if err == nil {
-			imagebyte, err = imageOperator.ImageByte(ctx)
-		}
+	if reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
+		return contenttype, imagebyte, nil
 	}
+	imageOperator := actor.NewImageOperator(contenttype, imageoption)
+	if err := imageOperator.Decode(ctx, bytes.NewReader(imagebyte)); err != nil {
+		return contenttype, nil, err
+	}
+	if err := imageOperator.Process(ctx); err != nil {
+		return contenttype, nil, err
+	}
+	imagebyte, err = imageOperator.ImageByte(ctx)
 	return contenttype, imagebyte, err
 }
 
@@ -73,13 +71,8 @@ func (iu *ImageUsecase) GetFile(ctx context.Context, storageKeyValue string) (st
 }
 
 func (iu *ImageUsecase) GetFileStream(ctx context.Context, storageKeyValue string) (string, int, io.ReadCloser, error) {
-	// get from storage
-	objectInfo, err := iu.cloudstorage.GetObjectInfo(ctx, storageKeyValue)
-	if err != nil {
-		return "", 0, nil, err
-	}
-	contentLength := objectInfo.ContentLength
-	contenttype, response, err := iu.cloudstorage.GetByStreaming(ctx, storageKeyValue)
+	// get from storage (single request - contentLength is included in the streaming response)
+	contenttype, contentLength, response, err := iu.cloudstorage.GetByStreaming(ctx, storageKeyValue)
 	return contenttype, contentLength, response, err
 }
 
@@ -90,30 +83,25 @@ func (iu *ImageUsecase) GetFileInfo(ctx context.Context, storageKeyValue string)
 }
 
 func (iu *ImageUsecase) ConvertImage(ctx context.Context, imageoption actor.ImageOperatorOption, reader multipart.File) ([]byte, error) {
-	var convertedimagebyte []byte
-	var err error
-	if !reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
-		re, ok := reader.(io.ReadSeeker)
-		if !ok {
-			return nil, err
-		}
-		contenttype, _ := utils.GetContentTypeByReadSeeker(re)
-		imageOperator := actor.NewImageOperator(
-			contenttype,
-			imageoption,
-		)
-		_, err = reader.Seek(0, io.SeekStart)
-		if err == nil {
-			err = imageOperator.Decode(ctx, reader)
-		}
-		if err == nil {
-			err = imageOperator.Process(ctx)
-		}
-		if err == nil {
-			convertedimagebyte, err = imageOperator.ImageByte(ctx)
-		}
+	if reflect.DeepEqual(imageoption, actor.ImageOperatorOption{}) {
+		return nil, nil
 	}
-	return convertedimagebyte, err
+	re, ok := reader.(io.ReadSeeker)
+	if !ok {
+		return nil, ErrReaderNotReadSeeker
+	}
+	contenttype, _ := utils.GetContentTypeByReadSeeker(re)
+	imageOperator := actor.NewImageOperator(contenttype, imageoption)
+	if _, err := reader.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	if err := imageOperator.Decode(ctx, reader); err != nil {
+		return nil, err
+	}
+	if err := imageOperator.Process(ctx); err != nil {
+		return nil, err
+	}
+	return imageOperator.ImageByte(ctx)
 }
 
 func (iu *ImageUsecase) UploadToStorage(ctx context.Context, formKeyPath string, reader multipart.File, imagebyte []byte) error {
