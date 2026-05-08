@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bytes"
 	"io"
 	"net/http"
 )
@@ -12,10 +11,10 @@ func GetContentTypeByReadSeeker(reader io.ReadSeeker) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(reader)
-	if err != nil {
+	buf := make([]byte, 512) //nolint:mnd
+	n, err := reader.Read(buf)
+	if err != nil && err != io.EOF {
 		return "", err
 	}
-	return http.DetectContentType(buf.Bytes()), nil
+	return http.DetectContentType(buf[:n]), nil
 }

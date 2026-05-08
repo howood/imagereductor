@@ -61,7 +61,7 @@ func (irh *ImageReductionHandler) Request(c *echo.Context) error {
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+cacheKey)
 	log.Info(ctx, c.Request().Method)
-	log.Info(ctx, c.Request().Header)
+	log.Debug(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
@@ -101,7 +101,7 @@ func (irh *ImageReductionHandler) RequestFile(c *echo.Context) error {
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+cacheKey)
 	log.Info(ctx, c.Request().Method)
-	log.Info(ctx, c.Request().Header)
+	log.Debug(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
@@ -136,7 +136,7 @@ func (irh *ImageReductionHandler) RequestStreaming(c *echo.Context) error {
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(ctx, c.Request().Method)
-	log.Info(ctx, c.Request().Header)
+	log.Debug(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
@@ -175,7 +175,7 @@ func (irh *ImageReductionHandler) RequestInfo(c *echo.Context) error {
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+cacheKey)
 	log.Info(ctx, c.Request().Method)
-	log.Info(ctx, c.Request().Header)
+	log.Debug(ctx, c.Request().Header)
 	if c.FormValue(config.FormKeyStorageKey) == "" {
 		//nolint:err113
 		return irh.errorResponse(ctx, c, http.StatusBadRequest, fmt.Errorf("%s is required", config.FormKeyStorageKey))
@@ -206,7 +206,10 @@ func (irh *ImageReductionHandler) Upload(c *echo.Context) error {
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(ctx, c.Request().Method)
-	log.Info(ctx, c.Request().Header)
+	log.Debug(ctx, c.Request().Header)
+	if err := validator.NewStorageKeyValidator().Validate(c.FormValue(config.FormKeyPath)); err != nil {
+		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
+	}
 	// get imageoption
 	imageoption, err := irh.getImageOptionByFormValue(ctx, c)
 	if err != nil {
@@ -242,7 +245,10 @@ func (irh *ImageReductionHandler) UploadFile(c *echo.Context) error {
 	ctx := context.WithValue(c.Request().Context(), requestid.GetRequestIDKey(), xRequestID)
 	log.Info(ctx, "========= START REQUEST : "+c.Request().URL.RequestURI())
 	log.Info(ctx, c.Request().Method)
-	log.Info(ctx, c.Request().Header)
+	log.Debug(ctx, c.Request().Header)
+	if err := validator.NewStorageKeyValidator().Validate(c.FormValue(config.FormKeyPath)); err != nil {
+		return irh.errorResponse(ctx, c, http.StatusBadRequest, err)
+	}
 	file, err := c.FormFile(config.FormKeyUploadFile)
 	if err != nil {
 		log.Error(ctx, err)

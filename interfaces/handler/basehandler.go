@@ -10,6 +10,7 @@ import (
 
 	"github.com/howood/imagereductor/application/actor/storageservice"
 	"github.com/howood/imagereductor/di/uccluster"
+	log "github.com/howood/imagereductor/infrastructure/logger"
 	"github.com/howood/imagereductor/infrastructure/requestid"
 	"github.com/howood/imagereductor/library/utils"
 	"github.com/labstack/echo/v5"
@@ -30,8 +31,13 @@ func (bh BaseHandler) errorResponse(ctx context.Context, c *echo.Context, statud
 	if strings.Contains(strings.ToLower(err.Error()), storageservice.RecordNotFoundMsg) {
 		statudcode = http.StatusNotFound
 	}
+	log.Warn(ctx, fmt.Sprintf("error response [%d]: %s", statudcode, err.Error()))
 	c.Response().Header().Set(echo.HeaderXRequestID, fmt.Sprintf("%v", ctx.Value(requestid.GetRequestIDKey())))
-	return c.JSONPretty(statudcode, map[string]any{"message": err.Error()}, marshalIndent)
+	msg := http.StatusText(statudcode)
+	if msg == "" {
+		msg = "request error"
+	}
+	return c.JSONPretty(statudcode, map[string]any{"message": msg}, marshalIndent)
 }
 
 func (bh BaseHandler) setResponseHeader(c *echo.Context, lastmodified, contentlength string, expires, xrequestid string) {

@@ -3,6 +3,7 @@ package usecase
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"mime/multipart"
 	"reflect"
@@ -119,6 +120,9 @@ func (iu *ImageUsecase) UploadToStorage(ctx context.Context, formKeyPath string,
 	if _, err := reader.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
-	//nolint:forcetypeassert
-	return iu.cloudstorage.Put(ctx, formKeyPath, reader.(io.ReadSeeker))
+	rs, ok := reader.(io.ReadSeeker)
+	if !ok {
+		return errors.New("reader does not implement io.ReadSeeker")
+	}
+	return iu.cloudstorage.Put(ctx, formKeyPath, rs)
 }
