@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
-
 	"github.com/howood/imagereductor/application/actor"
 	"github.com/howood/imagereductor/application/actor/storageservice"
 	"github.com/howood/imagereductor/application/usecase"
