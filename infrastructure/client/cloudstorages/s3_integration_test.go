@@ -95,7 +95,7 @@ func TestS3Integration_GetByStreaming(t *testing.T) {
 		t.Fatalf("Put: %v", err)
 	}
 
-	contentType, rc, err := inst.GetByStreaming(ctx, bucket, "stream/data.bin")
+	contentType, contentLength, rc, err := inst.GetByStreaming(ctx, bucket, "stream/data.bin")
 	if err != nil {
 		t.Fatalf("GetByStreaming: %v", err)
 	}
@@ -110,6 +110,9 @@ func TestS3Integration_GetByStreaming(t *testing.T) {
 	}
 	if contentType == "" {
 		t.Fatal("contentType empty")
+	}
+	if contentLength != len(content) {
+		t.Fatalf("contentLength = %d, want %d", contentLength, len(content))
 	}
 }
 

@@ -72,7 +72,7 @@ func (csa *CloudStorageAssessor) Get(ctx context.Context, key string) (string, [
 }
 
 // GetByStreaming returns storage contents by streaming.
-func (csa *CloudStorageAssessor) GetByStreaming(ctx context.Context, key string) (string, io.ReadCloser, error) {
+func (csa *CloudStorageAssessor) GetByStreaming(ctx context.Context, key string) (string, int, io.ReadCloser, error) {
 	return csa.instance.GetByStreaming(ctx, csa.instance.GetBucket(), key)
 }
 

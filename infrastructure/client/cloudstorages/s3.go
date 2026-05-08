@@ -157,19 +157,23 @@ func (s3instance *S3Instance) Get(ctx context.Context, bucket, key string) (stri
 }
 
 // GetByStreaming gets from storage by streaming (no timeout).
-func (s3instance *S3Instance) GetByStreaming(ctx context.Context, bucket, key string) (string, io.ReadCloser, error) {
+func (s3instance *S3Instance) GetByStreaming(ctx context.Context, bucket, key string) (string, int, io.ReadCloser, error) {
 	log.Debug(ctx, bucket)
 	log.Debug(ctx, key)
 	response, err := s3instance.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil {
-		return "", nil, fmt.Errorf("get object(stream) bucket=%s key=%s: %w", bucket, key, err)
+		return "", 0, nil, fmt.Errorf("get object(stream) bucket=%s key=%s: %w", bucket, key, err)
 	}
 	contenttype := ""
 	if response.ContentType != nil {
 		contenttype = *response.ContentType
 	}
+	contentLength := 0
+	if response.ContentLength != nil {
+		contentLength = int(*response.ContentLength)
+	}
 	log.Debug(ctx, contenttype)
-	return contenttype, response.Body, nil
+	return contenttype, contentLength, response.Body, nil
 }
 
 // GetObjectInfo gets object head metadata.

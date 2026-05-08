@@ -56,12 +56,15 @@ func (iu *ImageUsecase) GetImage(ctx context.Context, imageoption actor.ImageOpe
 			imageoption,
 		)
 		err = imageOperator.Decode(ctx, bytes.NewReader(imagebyte))
-		if err == nil {
-			err = imageOperator.Process(ctx)
+		// Decode完了後、元のバイトスライスはピクセルデータに展開済みなので解放可能
+		imagebyte = nil
+		if err != nil {
+			return contenttype, nil, err
 		}
-		if err == nil {
-			imagebyte, err = imageOperator.ImageByte(ctx)
+		if err = imageOperator.Process(ctx); err != nil {
+			return contenttype, nil, err
 		}
+		imagebyte, err = imageOperator.ImageByte(ctx)
 	}
 	return contenttype, imagebyte, err
 }
@@ -73,13 +76,8 @@ func (iu *ImageUsecase) GetFile(ctx context.Context, storageKeyValue string) (st
 }
 
 func (iu *ImageUsecase) GetFileStream(ctx context.Context, storageKeyValue string) (string, int, io.ReadCloser, error) {
-	// get from storage
-	objectInfo, err := iu.cloudstorage.GetObjectInfo(ctx, storageKeyValue)
-	if err != nil {
-		return "", 0, nil, err
-	}
-	contentLength := objectInfo.ContentLength
-	contenttype, response, err := iu.cloudstorage.GetByStreaming(ctx, storageKeyValue)
+	// get from storage (single request - contentLength is included in the streaming response)
+	contenttype, contentLength, response, err := iu.cloudstorage.GetByStreaming(ctx, storageKeyValue)
 	return contenttype, contentLength, response, err
 }
 
