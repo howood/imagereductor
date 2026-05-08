@@ -370,10 +370,10 @@ func TestImageUsecase_GetImage_ProcessError(t *testing.T) {
 // because multipart.File embeds io.Seeker). Use a wrapper that hides ReadSeeker.
 type nonReadSeekerFile struct{}
 
-func (nonReadSeekerFile) Read(_ []byte) (int, error)                  { return 0, io.EOF }
-func (nonReadSeekerFile) Close() error                                { return nil }
-func (nonReadSeekerFile) Seek(_ int64, _ int) (int64, error)          { return 0, errSeekFailed }
-func (nonReadSeekerFile) ReadAt(_ []byte, _ int64) (int, error)       { return 0, io.EOF }
+func (nonReadSeekerFile) Read(_ []byte) (int, error)            { return 0, io.EOF }
+func (nonReadSeekerFile) Close() error                          { return nil }
+func (nonReadSeekerFile) Seek(_ int64, _ int) (int64, error)    { return 0, errSeekFailed }
+func (nonReadSeekerFile) ReadAt(_ []byte, _ int64) (int, error) { return 0, io.EOF }
 
 var errSeekFailed = errors.New("seek failed")
 
