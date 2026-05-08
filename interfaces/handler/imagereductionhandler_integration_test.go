@@ -374,3 +374,77 @@ func TestImageReductionHandler_Upload(t *testing.T) {
 		t.Fatalf("status = %d, want 200, body: %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestImageReductionHandler_Upload_PathTraversal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	t.Setenv("VALIDATE_IMAGE_TYPE", "png,jpeg")
+
+	env := setupHandlerEnv(t)
+
+	pngData := createTestPNG(t)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("uploadfile", "test.png")
+	if err != nil {
+		t.Fatalf("CreateFormFile: %v", err)
+	}
+	if _, err := part.Write(pngData); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := writer.WriteField("path", "../etc/malicious.png"); err != nil {
+		t.Fatalf("WriteField: %v", err)
+	}
+	writer.Close()
+
+	e := echo.New()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload", &body)
+	req.Header.Set(echo.HeaderContentType, writer.FormDataContentType())
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := env.handler.Upload(c); err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 for path traversal", rec.Code)
+	}
+}
+
+func TestImageReductionHandler_UploadFile_PathTraversal(t *testing.T) { //nolint:paralleltest
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	env := setupHandlerEnv(t)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("uploadfile", "test.txt")
+	if err != nil {
+		t.Fatalf("CreateFormFile: %v", err)
+	}
+	if _, err := part.Write([]byte("content")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := writer.WriteField("path", "../../secret/file.txt"); err != nil {
+		t.Fatalf("WriteField: %v", err)
+	}
+	writer.Close()
+
+	e := echo.New()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload-file", &body)
+	req.Header.Set(echo.HeaderContentType, writer.FormDataContentType())
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if err := env.handler.UploadFile(c); err != nil {
+		t.Fatalf("UploadFile: %v", err)
+	}
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 for path traversal", rec.Code)
+	}
+}

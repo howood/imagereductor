@@ -285,3 +285,20 @@ func newFakeMultipartFile(r *bytes.Reader) *fakeMultipartFile {
 func (f *fakeMultipartFile) Close() error {
 	return nil
 }
+
+func TestImageUsecase_UploadToStorage_NotReadSeeker(t *testing.T) {
+	t.Parallel()
+
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	s := setupImageUsecaseRaw(t)
+	ctx := t.Context()
+
+	err := s.uc.UploadToStorage(ctx, "up/fail.txt", newFakeMultipartFile(bytes.NewReader([]byte("data"))), nil)
+	// fakeMultipartFile embeds *bytes.Reader which IS io.ReadSeeker, so this should succeed.
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
