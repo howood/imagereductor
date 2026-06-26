@@ -12,7 +12,7 @@ on:
         type: string
 
 env:
-  IMAGE_NAME: howood/imagereductor
+  IMAGE_NAME: drvitaminc/imagereductor
 
 jobs:
   docker:
