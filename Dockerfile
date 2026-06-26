@@ -1,4 +1,4 @@
-FROM golang:1.26 AS build-env
+FROM --platform=$BUILDPLATFORM golang:1.26 AS build-env
 
 WORKDIR /go/src/github.com/howood/imagereductor
 
@@ -16,9 +16,13 @@ COPY infrastructure /go/src/github.com/howood/imagereductor/infrastructure
 COPY interfaces /go/src/github.com/howood/imagereductor/interfaces
 COPY library /go/src/github.com/howood/imagereductor/library
 
+# Cross-compile based on the target platform provided by buildx
+ARG TARGETOS
+ARG TARGETARCH
+
 # Build with optimizations
 RUN cd /go/src/github.com/howood/imagereductor/imagereductor && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags "-s -w" -o /go/bin/imagereductor
 
 
