@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.26 AS build-env
+FROM --platform=$BUILDPLATFORM golang:1.27 AS build-env
 
 WORKDIR /go/src/github.com/howood/imagereductor
 

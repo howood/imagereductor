@@ -9,15 +9,17 @@ import (
 	"time"
 
 	"github.com/howood/imagereductor/infrastructure/client/cloudstorages"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/minio"
 )
 
 func setupMinIO(t *testing.T) *cloudstorages.S3Instance {
 	t.Helper()
+	testcontainers.SkipIfProviderIsNotHealthy(t)
 
 	ctx := t.Context()
 
-	container, err := minio.Run(ctx, "minio/minio:latest",
+	container, err := minio.Run(ctx, "quay.io/minio/minio:RELEASE.2024-01-16T16-07-38Z",
 		minio.WithUsername("minioadmin"),
 		minio.WithPassword("minioadmin"),
 	)

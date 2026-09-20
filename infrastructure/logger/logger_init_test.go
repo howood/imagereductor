@@ -7,6 +7,11 @@ import (
 	"testing"
 )
 
+const (
+	logLevelEnv = "LOG_LEVEL"
+	logModeEnv  = "LOG_MODE"
+)
+
 // Test_Logger_Init_Subprocess covers different init() branches by running
 // subprocess tests with various LOG_LEVEL/LOG_MODE/VERIFY_MODE env values.
 // Each subprocess imports the logger package, triggering init() with the given env.
@@ -21,15 +26,15 @@ func Test_Logger_Init_Subprocess(t *testing.T) { //nolint:paralleltest
 		name string
 		env  map[string]string
 	}{
-		{"LOG_LEVEL_debug", map[string]string{"LOG_LEVEL": "debug"}},
-		{"LOG_LEVEL_warn", map[string]string{"LOG_LEVEL": "warn"}},
-		{"LOG_LEVEL_error", map[string]string{"LOG_LEVEL": "error"}},
-		{"LOG_LEVEL_fatal", map[string]string{"LOG_LEVEL": "fatal"}},
-		{"LOG_LEVEL_invalid", map[string]string{"LOG_LEVEL": "invalid_value"}},
+		{"LOG_LEVEL_debug", map[string]string{logLevelEnv: "debug"}},
+		{"LOG_LEVEL_warn", map[string]string{logLevelEnv: "warn"}},
+		{"LOG_LEVEL_error", map[string]string{logLevelEnv: "error"}},
+		{"LOG_LEVEL_fatal", map[string]string{logLevelEnv: "fatal"}},
+		{"LOG_LEVEL_invalid", map[string]string{logLevelEnv: "invalid_value"}},
 		{"VERIFY_MODE_enable", map[string]string{"VERIFY_MODE": "enable"}},
-		{"LOG_MODE_few", map[string]string{"LOG_MODE": "few"}},
-		{"LOG_MODE_minimum", map[string]string{"LOG_MODE": "minimum"}},
-		{"LOG_MODE_other", map[string]string{"LOG_MODE": "other_value"}},
+		{"LOG_MODE_few", map[string]string{logModeEnv: "few"}},
+		{"LOG_MODE_minimum", map[string]string{logModeEnv: "minimum"}},
+		{"LOG_MODE_other", map[string]string{logModeEnv: "other_value"}},
 	}
 
 	for _, tc := range cases { //nolint:paralleltest

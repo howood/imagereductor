@@ -46,11 +46,9 @@ func NewJwtOperator(username string, admin bool) *JwtOperator {
 	return &JwtOperator{
 		&jwtCreator{
 			jwtClaims: &entity.JwtClaims{
-				Name:  username,
-				Admin: admin,
-				RegisteredClaims: jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(expired))),
-				},
+				Name:      username,
+				Admin:     admin,
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(expired))),
 			},
 		},
 	}
