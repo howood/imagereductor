@@ -9,7 +9,7 @@ import (
 type RequestContextKey string
 
 // KeyRequestID is XRequestId key.
-const KeyRequestID = "X-Request-Id"
+const KeyRequestID = "X-Request-ID"
 
 func generateRequestID() string {
 	return uuid.GetUUID(uuid.SatoriUUID)
