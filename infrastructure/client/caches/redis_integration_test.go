@@ -6,11 +6,14 @@ import (
 	"time"
 
 	"github.com/howood/imagereductor/infrastructure/client/caches"
+	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
 func setupRedis(t *testing.T) *caches.RedisInstance {
 	t.Helper()
+	testcontainers.SkipIfProviderIsNotHealthy(t)
+
 	ctx := t.Context()
 
 	container, err := tcredis.Run(ctx, "redis:7-alpine")
@@ -134,6 +137,7 @@ func TestRedisIntegration_CloseConnect_Persistent(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
+	testcontainers.SkipIfProviderIsNotHealthy(t)
 
 	ctx := t.Context()
 
